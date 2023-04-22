@@ -1,7 +1,7 @@
 import fs from 'fs';
 
-export function parsePGNFile() {
-    const fileContent = fs.readFileSync("eco.pgn", 'utf8');
+export function parsePGNFile(file: string) {
+    const fileContent = fs.readFileSync(file, 'utf8');
     const games = [];
     let game: any = {};
     const lines = fileContent.split('\n').map(line => line.trim());
