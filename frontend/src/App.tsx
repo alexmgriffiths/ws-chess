@@ -2,12 +2,16 @@ import { useState, useEffect, } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from 'react-chessboard';
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
+import { Navigate } from "react-router-dom";
+import Cookies from 'js-cookie';
 
 function App(props: any) {
   const [socket, setSocket]: any = useState();
-  const [userId, setUserId]: any = useState();
+  const [token, setToken]: any = useState();
+  const [user, setUser]: any = useState();
   const [gameId, setGameId]: any = useState();
 
+  const [serverError, setServerError]: any = useState("");
   const [serverMessages, setServerMessages]: any = useState([]);
 
   const [opponent, setOpponent]: any = useState("");
@@ -23,8 +27,8 @@ function App(props: any) {
     const search = window.location.search;
     const params = new URLSearchParams(search);
     const tempGameId = params.get('gameId') ?? Math.floor(Math.random() * 100000);
-    const tempUserId = params.get("userId") ?? Math.floor(Math.random() * 10000);
-    setUserId(tempUserId);
+    const tempToken = Cookies.get("token") ?? "none";
+    setToken(tempToken);
     setGameId(tempGameId);
 
     const socketConnection: WebSocket = new WebSocket("ws://localhost:8080");
@@ -32,7 +36,7 @@ function App(props: any) {
       const serverPingMessage = JSON.stringify({type: "PING"});
       socketConnection.send(serverPingMessage);
       const serverMessage = JSON.stringify({type: "START", data: {
-        userId: tempUserId,
+        user: tempToken,
         gameId: tempGameId
       }});
       socketConnection.send(serverMessage);
@@ -47,12 +51,17 @@ function App(props: any) {
           const { pgn, comment } = data;
           const gameCopy = new Chess();
           gameCopy.loadPgn(pgn);
-          setGameComment(comment);
+          if(comment && comment.length > 0) {
+            setGameComment(comment);
+          }
           setGame(gameCopy);
         break;
         case "ERROR":
           const { error } = data;
-          console.log(error);
+          setServerError(error);
+        break;
+        case "INVALID":
+          console.log(data.error);
         break;
         case "MESSAGE":
           const { message } = data;
@@ -67,19 +76,17 @@ function App(props: any) {
         case "START":
           const { opponent } = data;
           setOpponent(opponent);
-          game.header(opponent);
+          setUser(data.user);
           setGameReady(true);
+        break;
+        case "GAMEEVENT":
+          const { event } = data;
+          console.log(event);
         break;
       }
     }
     setSocket(socketConnection);
   }, []);
-
-  useEffect(() => {
-    if(game.isCheckmate()) {
-      alert("Get shit on");
-    }
-  }, [game]);
 
   const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
   const customPieces = () => {
@@ -102,7 +109,7 @@ function App(props: any) {
 
   const makeMove = (from: Square, to: Square, piece: Piece = "wP", promotion: string = "q") => {
     try {
-      const serverMessage = JSON.stringify({type: "MOVE", data: { from, to, gameId, userId }});
+      const serverMessage = JSON.stringify({type: "MOVE", data: { from, to, gameId, user: token }});
       socket.send(serverMessage);
       return true;
     } catch (e: any) {
@@ -193,6 +200,26 @@ function App(props: any) {
     }
   }
 
+  const resign = () => {
+    const serverMessage = JSON.stringify({type: "RESET", data: { gameId }});
+    socket.send(serverMessage);
+    setGameComment("");
+  }
+
+  if(token === "none") {
+    return (
+      <>
+        <Navigate to={"/"} />
+      </>
+    )
+  }
+
+  if(serverError.length > 0) {
+    return (
+      <h1>Server Error: {serverError}</h1>
+    )
+  }
+
   if(!gameReady) {
     return (
       <>
@@ -204,33 +231,62 @@ function App(props: any) {
 
   return (
     <div id="page">
-      <Chessboard 
-        boardWidth={720} 
-        position={game.fen()}
-        arePiecesDraggable={false}
-        onPieceDragBegin={onPieceDrag}
-        onPieceDrop={onPieceDragEnd}
-        onSquareClick={onSquareClick}
-        onSquareRightClick={onSquareRightClick}
-        customBoardStyle={{
-          borderRadius: "4px",
-          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
-        }}
-        customDarkSquareStyle={{ backgroundColor: "#779952" }}
-        customLightSquareStyle={{ backgroundColor: "#edeed1" }}
-        customPieces={customPieces()}
-        customSquareStyles={{
-          ...squareOptions,
-          ...rightClickedSquares,
-        }}
-        boardOrientation={playerColor}
-      />
-      <h3>Comment: {gameComment}</h3>
-      <h1>User Id: {userId}</h1>
-      <h1>Opponent Id: {opponent}</h1>
-      <h1>Game ID: {gameId}</h1>
-      <h3>FEN: {game.fen()}</h3>
-      {game.pgn()}
+      <div id="chessContent">
+        <div id="chessboard">
+        <div className="playerContainer">
+            <div className="nameContainer">
+              {opponent.username}
+            </div>
+            <div className="eloContainer">
+              ({opponent.elo})
+            </div>
+          </div>
+          <div id="chessContainer">
+            <Chessboard 
+              boardWidth={620} 
+              position={game.fen()}
+              arePiecesDraggable={false}
+              onPieceDragBegin={onPieceDrag}
+              onPieceDrop={onPieceDragEnd}
+              onSquareClick={onSquareClick}
+              onSquareRightClick={onSquareRightClick}
+              customBoardStyle={{
+                borderRadius: "4px",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
+              }}
+              // customDarkSquareStyle={{ backgroundColor: "#779952" }}
+              // customLightSquareStyle={{ backgroundColor: "#edeed1" }}
+              // customPieces={customPieces()}
+              customSquareStyles={{
+                ...squareOptions,
+                ...rightClickedSquares,
+              }}
+              boardOrientation={playerColor}
+            />
+          </div>
+          <div className="playerContainer">
+            <div className="nameContainer">
+              {user.username}
+            </div>
+            <div className="eloContainer">
+              ({user.elo})
+            </div>
+          </div>
+        </div>
+        <div id="rightSide">
+          <div id="history">
+            <h3>{gameComment}</h3>{}
+            {game.history().map((move, index) => (
+              <>
+                <span key={index}>{move}</span><br />
+              </>
+            ))}
+          </div>
+          <div id="actionsContainer">
+            <button onClick={resign}>Resign</button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
