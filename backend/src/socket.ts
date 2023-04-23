@@ -4,12 +4,13 @@ import { GameConnection } from './models/GameConnection';
 import { parsePGNFile } from './helpers/PGNHelper';
 import { User } from './models/User';
 import UsersService from './services/userService';
+import { ChatMessage } from './models/ChatMessage';
 
 export function setupSocket() {
   const openings: any = parsePGNFile("eco.pgn");
   const usersService = new UsersService();
   const wss = new WebSocketServer({ port: process.env.WS_PORT as unknown as number });
-  const games = new Map<number, GameConnection>();
+  const games = new Map<string, GameConnection>();
 
   wss.on('connection', function connection(ws) {
     ws.on('error', console.error);
@@ -32,11 +33,53 @@ export function setupSocket() {
           handleMove(ws, event.data);
           break;
         case "RESET":
-        handleReset(ws, event.data);
+          handleReset(ws, event.data);
           break;
+        case "CHAT":
+          handleChat(ws, event.data);
+        break;
         default:
           console.warn(`Unknown event type: ${event.type}`);
       }
+    }
+
+    function userFromSocket(gameId: string, socket: WebSocket) {
+      const currentGame = games.get(gameId);
+      if(currentGame!.white!.socket === socket) return currentGame!.white!.user;
+      if(currentGame!.black!.socket === socket) return currentGame!.black!.user;
+      return false;
+    }
+
+    async function handleChat(socket: WebSocket, data: any) {
+      const { message, gameId } = data;
+
+      const currentUser = userFromSocket(gameId, socket);
+      if(currentUser === false) {
+        return;
+      }
+
+      const currentGame = games.get(gameId);
+      console.log(games);
+      console.log("--------------------------------------");
+      console.log(currentGame);
+      let tempGameChat: ChatMessage[] = [];
+      if(currentGame?.chat !== undefined) {
+        tempGameChat = [...currentGame.chat, {username: currentUser.username, message, timestamp: new Date().toDateString()}] as ChatMessage[];
+      } else {
+        tempGameChat = [{username: currentUser.username, message, timestamp: new Date().toDateString()}]
+      }
+      const clientMessage = {type: "CHATUPDATE", gameChat: tempGameChat};
+      games.set(gameId, {game: currentGame!.game, white: currentGame!.white, black: currentGame!.black, chat: tempGameChat });
+      sendToGame(gameId, clientMessage);
+    }
+
+    async function sendToGame(gameId: string, message: any) {
+      const currentGame = games.get(gameId);
+      const { white, black }: any = currentGame;
+      const whiteSocket = white.socket;
+      const blackSocket = black.socket;
+      send(whiteSocket, message);
+      send(blackSocket, message);
     }
 
     function searchGameCode(socket: WebSocket, code: any) {
@@ -113,7 +156,7 @@ export function setupSocket() {
       }
     }
 
-    async function createNewGame(gameId: number, user: string, socket: WebSocket) {
+    async function createNewGame(gameId: string, user: string, socket: WebSocket) {
       const userData = await usersService.getSession(user);
       const userObject: User = {
         session: user,
@@ -127,7 +170,7 @@ export function setupSocket() {
       socket.send(clientMessage);
     }
 
-    async function addToGame(gameId: number, user: string, socket: WebSocket) {
+    async function addToGame(gameId: string, user: string, socket: WebSocket) {
       const userData = await usersService.getSession(user);
       const userObject: User = {
         session: user,

@@ -10,6 +10,8 @@ function App(props: any) {
   const [token, setToken]: any = useState();
   const [user, setUser]: any = useState();
   const [gameId, setGameId]: any = useState();
+  const [chatMessage, setChatMessage]: any = useState("");
+  const [gameChat, setGameChat]: any = useState([]);
 
   const [serverError, setServerError]: any = useState("");
   const [serverMessages, setServerMessages]: any = useState([]);
@@ -21,7 +23,7 @@ function App(props: any) {
   const [gameComment, setGameComment] = useState("");
   const [moveFrom, setMoveFrom] = useState("");
   const [squareOptions, setSquareOptions] = useState({});
-  const [rightClickedSquares, setRightClickedSquares]: any = useState();
+  const [rightClickedSquares, setRightClickedSquares]: any = useState({});
 
   useEffect(() => {
     const search = window.location.search;
@@ -82,6 +84,10 @@ function App(props: any) {
         case "GAMEEVENT":
           const { event } = data;
           console.log(event);
+        break;
+        case "CHATUPDATE":
+          const { gameChat } = data;
+          setGameChat(gameChat);
         break;
       }
     }
@@ -206,6 +212,12 @@ function App(props: any) {
     setGameComment("");
   }
 
+  const sendMessage = () => {
+    const serverMessage = JSON.stringify({type: "CHAT", data: { message: chatMessage, gameId }});
+    socket.send(serverMessage);
+    setChatMessage("");
+  }
+
   if(token === "none") {
     return (
       <>
@@ -275,17 +287,25 @@ function App(props: any) {
         </div>
         <div id="rightSide">
           <div id="history">
-            <h3>{gameComment}</h3>{}
+            <h3>{gameComment}</h3>
             {game.history().map((move, index) => (
               <>
                 <span key={index}>{move}</span><br />
               </>
             ))}
           </div>
-          <div id="actionsContainer">
-            <button onClick={resign}>Resign</button>
+          <div id="history">
+            {gameChat.map((chat: any, index: number) => (
+              <>
+                <span key={index}>{chat.username} ({chat.timestamp}): {chat.message}</span><br />
+              </>
+            ))}
+            <input type="text" placeholder="Chat Message" onChange={(e) => {setChatMessage(e.target.value)}} value={chatMessage} /><button onClick={sendMessage}>Send</button>
           </div>
         </div>
+      </div>
+      <div id="actionsContainer">
+        <button onClick={resign}>Resign</button>
       </div>
     </div>
   )
