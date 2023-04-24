@@ -7,6 +7,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Change working directory to client folder
+      run: cd frontend
     - name: Install dependencies
       run: npm install
     - name: Build React project
