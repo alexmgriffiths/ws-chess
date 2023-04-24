@@ -178,7 +178,7 @@ function App() {
   }
 
   const onSquareRightClick = (square: Square) => {
-    const color = "rgba(150, 0, 0, 0.4)";
+    const color = "rgba(255, 0, 0, 0.4)";
     setRightClickedSquares({
       ...rightClickedSquares,
       [square]:

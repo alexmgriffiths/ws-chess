@@ -1,4 +1,5 @@
 # Intro
+![image description](screenshot.png)
 
 This is a multi-player chess application built using chess.js, react-chessboard, and ws featuring chat, server-side move validation, opening book game-comments, and user login/registration.
 
@@ -76,3 +77,23 @@ For production, you should run this service as www-root and change the permissio
 # Database
 
 Database setup is simple, just download and install MySQL server on your server and import the db.sql file in the database folder.
+
+# Todo
+* Login / Register redirect to home-page
+* Logout redirect to login
+* Login / Register page styling
+* ELO calculation on checkmate
+* ELO Update on checkmate
+* checkmate handling
+* Repition handling
+* Reconnection on socket drop
+* Valid username regex
+* Player profiles
+* Find games
+* Openings quiz
+* Chat reset bug
+* Previous move highlights
+* Matchmaking
+* Game score
+* Fix game history display
+* Enter to send chat message
