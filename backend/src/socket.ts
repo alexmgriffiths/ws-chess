@@ -1,4 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
+import { createServer } from 'https';
+import { readFileSync } from 'fs';
 import { Chess } from 'chess.js';
 import { GameConnection } from './models/GameConnection';
 import { parsePGNFile } from './helpers/PGNHelper';
@@ -9,7 +11,16 @@ import { ChatMessage } from './models/ChatMessage';
 export function setupSocket() {
   const openings: any = parsePGNFile("eco.pgn");
   const usersService = new UsersService();
-  const wss = new WebSocketServer({ port: process.env.WS_PORT as unknown as number });
+
+  const server = createServer({
+    cert: readFileSync('./certs/cert.pem'),
+    key: readFileSync('./certs/key.pem')
+  });
+  server.listen(process.env.WS_PORT);
+
+  const wss = new WebSocketServer({ 
+    server
+  });
   const games = new Map<string, GameConnection>();
 
   wss.on('connection', function connection(ws) {
@@ -59,9 +70,6 @@ export function setupSocket() {
       }
 
       const currentGame = games.get(gameId);
-      console.log(games);
-      console.log("--------------------------------------");
-      console.log(currentGame);
       let tempGameChat: ChatMessage[] = [];
       if(currentGame?.chat !== undefined) {
         tempGameChat = [...currentGame.chat, {username: currentUser.username, message, timestamp: new Date().toDateString()}] as ChatMessage[];
@@ -151,7 +159,8 @@ export function setupSocket() {
         send(socket, {
           type: "START", 
           opponent: currentPlayerColor === "white" ? currentGame.black!.user : currentGame.white.user,
-          user: currentPlayerColor === "white" ? currentGame.white!.user : currentGame.black.user
+          user: currentPlayerColor === "white" ? currentGame.white!.user : currentGame.black.user,
+          chat: currentGame.chat
         });
       }
     }
@@ -255,4 +264,6 @@ export function setupSocket() {
     }
 
   });
+
+  console.log("WEBSOCKET LISTENING ON PORT ", process.env.WS_PORT);
 }

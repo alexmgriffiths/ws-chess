@@ -33,7 +33,7 @@ function App(props: any) {
     setToken(tempToken);
     setGameId(tempGameId);
 
-    const socketConnection: WebSocket = new WebSocket("ws://localhost:8080");
+    const socketConnection: WebSocket = new WebSocket(process.env.REACT_APP_WS_URL as string);
     socketConnection.onopen = (e: any) => {
       const serverPingMessage = JSON.stringify({type: "PING"});
       socketConnection.send(serverPingMessage);
@@ -56,6 +56,8 @@ function App(props: any) {
           if(comment && comment.length > 0) {
             setGameComment(comment);
           }
+          setSquareOptions({});
+          setMoveFrom("");
           setGame(gameCopy);
         break;
         case "ERROR":
@@ -79,6 +81,7 @@ function App(props: any) {
           const { opponent } = data;
           setOpponent(opponent);
           setUser(data.user);
+          setGameChat(data.chat);
           setGameReady(true);
         break;
         case "GAMEEVENT":
@@ -91,6 +94,10 @@ function App(props: any) {
         break;
       }
     }
+    setInterval(() => {
+      const serverPingMessage = JSON.stringify({type: "PING"});
+      socketConnection.send(serverPingMessage);
+    }, 5000);
     setSocket(socketConnection);
   }, []);
 
@@ -177,14 +184,14 @@ function App(props: any) {
   }
 
   const onSquareRightClick = (square: Square) => {
-    const colour = "rgba(0, 0, 255, 0.4)";
+    const color = "rgba(150, 0, 0, 0.4)";
     setRightClickedSquares({
       ...rightClickedSquares,
       [square]:
         rightClickedSquares[square] &&
-        rightClickedSquares[square].backgroundColor === colour
+        rightClickedSquares[square].backgroundColor === color
           ? undefined
-          : { backgroundColor: colour },
+          : { backgroundColor: color },
     });
   }
 
@@ -295,7 +302,7 @@ function App(props: any) {
             ))}
           </div>
           <div id="history">
-            {gameChat.map((chat: any, index: number) => (
+            {gameChat && gameChat.map((chat: any, index: number) => (
               <>
                 <span key={index}>{chat.username} ({chat.timestamp}): {chat.message}</span><br />
               </>

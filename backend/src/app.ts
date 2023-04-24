@@ -11,7 +11,7 @@ setupSocket();
 
 const app = express();
 app.use(json());
-app.use(cors());
+app.use(cors({origin: "chess.automic.io"}));
 app.use(helmet());
 
 app.use('/api', apiController);

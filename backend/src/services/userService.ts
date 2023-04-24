@@ -72,7 +72,11 @@ export default class UsersService {
         try {
             const sql = "INSERT INTO `users` (email, username, password) VALUES (?, ?, ?)";
             await db.query(sql, [email, username, await hashPassword(password)]);
-            return { status: 200, data: { message: "User registered successfully!" }};
+
+            const token = uuidv4();
+            db.query('UPDATE `users` SET `session` = ? WHERE `email` = ? LIMIT 1', [token, email]);
+
+            return { status: 200, data: { message: "User registered successfully!", token }};
         } catch(e: any) {
             return {
                 status: 500,
