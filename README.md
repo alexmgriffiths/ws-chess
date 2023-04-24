@@ -26,7 +26,7 @@ Alternatively, setup a CI/CD pipeline like this repo has to do it for you.
         listen 80;
         server_name chesss.automic.io;
 
-        root /home/admin/chess/frontend;
+        root /home/admin/chess/frontend/build;
         index index.html;
         location / {
             try_files $uri $uri/ /index.html;
