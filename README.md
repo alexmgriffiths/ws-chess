@@ -97,3 +97,6 @@ Database setup is simple, just download and install MySQL server on your server 
 * Game score
 * Fix game history display
 * Enter to send chat message
+* Admin controls
+* Report player
+* Chess engine?
