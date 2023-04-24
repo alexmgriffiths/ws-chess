@@ -1,0 +1,28 @@
+name: Deploy Backend Service
+
+on:
+  workflow_dispatch
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        
+      - name: Change working directory to client folder
+        run: cd frontend
+        
+      - name: Install Dependencies
+        run: npm install
+        working-directory: ./backend
+
+      - name: Deploy Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          rm: true
+          run: |
+            sudo systemctl restart chess-api
