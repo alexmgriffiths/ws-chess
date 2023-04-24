@@ -5,7 +5,7 @@ import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { Navigate } from "react-router-dom";
 import Cookies from 'js-cookie';
 
-function App(props: any) {
+function App() {
   const [socket, setSocket]: any = useState();
   const [token, setToken]: any = useState();
   const [user, setUser]: any = useState();
@@ -14,7 +14,6 @@ function App(props: any) {
   const [gameChat, setGameChat]: any = useState([]);
 
   const [serverError, setServerError]: any = useState("");
-  const [serverMessages, setServerMessages]: any = useState([]);
 
   const [opponent, setOpponent]: any = useState("");
   const [gameReady, setGameReady]: any = useState(false);
@@ -67,12 +66,6 @@ function App(props: any) {
         case "INVALID":
           console.log(data.error);
         break;
-        case "MESSAGE":
-          const { message } = data;
-          const serverMessagesCopy = serverMessages;
-          serverMessagesCopy.push(message);
-          setServerMessages(serverMessagesCopy);
-        break;
         case "INIT":
           const { color } = data;
           setPlayerColor(color);
@@ -101,24 +94,25 @@ function App(props: any) {
     setSocket(socketConnection);
   }, []);
 
-  const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
-  const customPieces = () => {
-    const returnPieces: any = {};
-    pieces.map((p) => {
-      returnPieces[p] = ({ squareWidth }: any) => (
-        <div
-          style={{
-            width: squareWidth,
-            height: squareWidth,
-            backgroundImage: `url(/pieces/${p}.png)`,
-            backgroundSize: "100%",
-          }}
-        />
-      );
-      return null;
-    });
-    return returnPieces;
-  };
+  //const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
+  
+  // const customPieces = () => {
+  //   const returnPieces: any = {};
+  //   pieces.map((p) => {
+  //     returnPieces[p] = ({ squareWidth }: any) => (
+  //       <div
+  //         style={{
+  //           width: squareWidth,
+  //           height: squareWidth,
+  //           backgroundImage: `url(/pieces/${p}.png)`,
+  //           backgroundSize: "100%",
+  //         }}
+  //       />
+  //     );
+  //     return null;
+  //   });
+  //   return returnPieces;
+  // };
 
   const makeMove = (from: Square, to: Square, piece: Piece = "wP", promotion: string = "q") => {
     try {

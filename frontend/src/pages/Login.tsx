@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Cookies from 'js-cookie';
 import { Link, Navigate } from 'react-router-dom';
 
 export default function Login() {
 
-    const [authToken, setAuthToken] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [navigate, setNavigate] = useState(false);
@@ -21,7 +20,7 @@ export default function Login() {
             const data = await response.json();
             // Set the token cookie
             Cookies.set('token', data.data.token, { secure: true, sameSite: 'none' });
-            setAuthToken(data.data.token);
+            setNavigate(true);
         } else {
             // Handle the login error
             alert("Login failed");
