@@ -24,5 +24,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           rm: true
-          run: |
-            sudo systemctl restart chess-api
+          strip_components: 2
+          source: ./backend/
+          target: /home/${{ secrets.SSH_USER }}/chess/backend
