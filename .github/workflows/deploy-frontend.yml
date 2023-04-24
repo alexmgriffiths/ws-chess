@@ -21,7 +21,6 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
+        rm: true
         source: build/
-        script: |
-          rm -rf /home/${{ secrets.SSH_USER }}/chess/frontend/*
-          scp -r build/* /home/${{ secrets.SSH_USER }}/chess/frontend/
+        target: /home/${{ secrets.SSH_USER }}/chess/frontend
