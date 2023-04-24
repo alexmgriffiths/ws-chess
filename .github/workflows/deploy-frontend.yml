@@ -22,5 +22,5 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         rm: true
-        source: build/
+        source: ./frontend/build/
         target: /home/${{ secrets.SSH_USER }}/chess/frontend
