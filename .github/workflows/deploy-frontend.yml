@@ -1,0 +1,26 @@
+name: Build and Deploy React Project
+on:
+  workflow_dispatch
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      run: npm install
+    - name: Build React project
+      run: npm run build
+    - name: Copy build artifacts to remote server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: build/
+        script: |
+          rm -rf /home/${{ secrets.SSH_USER }}/chess/frontend/*
+          scp -r build/* /home/${{ secrets.SSH_USER }}/chess/frontend/
