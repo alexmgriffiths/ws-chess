@@ -13,8 +13,8 @@ export function setupSocket() {
   const usersService = new UsersService();
 
   const server = createServer({
-    cert: readFileSync('./certs/cert.pem'),
-    key: readFileSync('./certs/key.pem')
+    cert: readFileSync('/etc/ssl/certs/cert.pem'),
+    key: readFileSync('/etc/ssl/private/key.pem')
   });
   server.listen(process.env.WS_PORT);
 
