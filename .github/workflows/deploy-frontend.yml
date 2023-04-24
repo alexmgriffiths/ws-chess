@@ -15,7 +15,11 @@ jobs:
       run: npm install
       working-directory: ./frontend
     - name: Build React project
-      run: npm run build
+      run: |
+        export PORT=3002
+        export REACT_APP_API_URL=https://chess-api.automic.io/api
+        export REACT_APP_WS_URL=wss://chess.automic.io:8443
+        npm run build
       working-directory: ./frontend
     - name: Copy build artifacts to remote server
       uses: appleboy/scp-action@master
