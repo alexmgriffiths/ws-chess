@@ -1,5 +1,5 @@
 {
-  "name": "chess3",
+  "name": "chess-ws",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
