@@ -22,7 +22,7 @@ jobs:
           rm: true
           strip_components: 1
           source: ./backend/
-          target: /home/${{ secrets.SSH_USER }}/chess/backend
+          target: /home/${{ secrets.SSH_USER }}/chess
       - name: Restart chess-api Service
         uses: appleboy/ssh-action@master
         with:
