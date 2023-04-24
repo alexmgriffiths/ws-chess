@@ -101,3 +101,4 @@ Database setup is simple, just download and install MySQL server on your server 
 * Report player
 * Chess engine?
 * Remove /api/users/users endpoint
+* Themes
