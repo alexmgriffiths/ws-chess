@@ -7,20 +7,30 @@ import { parsePGNFile } from './helpers/PGNHelper';
 import { User } from './models/User';
 import UsersService from './services/userService';
 import { ChatMessage } from './models/ChatMessage';
+import { Stockfish } from './stockfish';
 
 export function setupSocket() {
   const openings: any = parsePGNFile("eco.pgn");
   const usersService = new UsersService();
 
-  const server = createServer({
-    cert: readFileSync('/etc/ssl/certs/cert.pem'),
-    key: readFileSync('/etc/ssl/private/key.pem')
-  });
-  server.listen(process.env.WS_PORT);
-
-  const wss = new WebSocketServer({ 
-    server
-  });
+  let server;
+  let wss;
+  if(process.env.ENV !== "dev") {
+    server = createServer({
+      cert: readFileSync(process.env.CERT_PATH as string),
+      key: readFileSync(process.env.CERT_KEY as string)
+    });
+    server.listen(process.env.WS_PORT);
+  
+    wss = new WebSocketServer({ 
+      server
+    });
+  } else {
+    wss = new WebSocketServer({
+      port: 8080
+    })
+  }
+  
   const games = new Map<string, GameConnection>();
 
   wss.on('connection', function connection(ws) {
@@ -77,7 +87,7 @@ export function setupSocket() {
         tempGameChat = [{username: currentUser.username, message, timestamp: new Date().toDateString()}]
       }
       const clientMessage = {type: "CHATUPDATE", gameChat: tempGameChat};
-      games.set(gameId, {game: currentGame!.game, white: currentGame!.white, black: currentGame!.black, chat: tempGameChat });
+      games.set(gameId, {game: currentGame!.game, white: currentGame!.white, black: currentGame!.black, stockfish: currentGame!.stockfish, chat: tempGameChat });
       sendToGame(gameId, clientMessage);
     }
 
@@ -141,14 +151,14 @@ export function setupSocket() {
           userId: currentUser.userId,
           username: currentUser.username,
           elo: currentUser.elo
-        }, socket}, black: currentGame?.black});
+        }, socket}, black: currentGame?.black, stockfish: currentGame!.stockfish, chat: currentGame?.chat});
       } else if(currentPlayerColor === "black") {
         games.set(gameId, {game: currentGame!.game, white: currentGame!.white, black: {user: {
           session: user,
           userId: currentUser.userId,
           username: currentUser.username,
           elo: currentUser.elo
-        }, socket}});
+        }, socket}, stockfish: currentGame?.stockfish, chat: currentGame?.chat});
       }
 
       send(socket, {type: "INIT", color: currentPlayerColor});
@@ -188,7 +198,7 @@ export function setupSocket() {
         elo: userData.elo
       }
       const game = games.get(gameId);
-      games.set(gameId, {game: game!.game, white: game!.white, black: { user: userObject, socket }});
+      games.set(gameId, {game: game!.game, white: game!.white, black: { user: userObject, socket }, stockfish: new Stockfish()});
 
       // Start the game for black
       send(socket, {type: "INIT", color: "black"});
@@ -212,8 +222,8 @@ export function setupSocket() {
 
         const gameCopy = new Chess();
         gameCopy.loadPgn(currentGame!.game.pgn());
-        gameCopy.move({from, to});
-        games.set(gameId, {game: gameCopy, white: currentGame!.white, black: currentGame!.black});
+        gameCopy.move({from, to, promotion: 'q'});
+        games.set(gameId, {game: gameCopy, white: currentGame!.white, black: currentGame!.black, stockfish: currentGame!.stockfish});
 
         let comment = "";
         if(openings[gameCopy.pgn()] !== undefined) {
@@ -228,6 +238,10 @@ export function setupSocket() {
         
         currentGame!.black!.socket!.send(clientMessage);
         currentGame!.white!.socket!.send(clientMessage);
+
+        // Check stockfish
+        currentGame?.stockfish?.loadFen(gameCopy.fen());
+        currentGame?.stockfish?.write("go depth 10");
 
         if(gameCopy.isCheckmate()) {
           send(currentGame!.black!.socket!, {type: "GAMEEVENT", error: "CHECKMATE" });
@@ -244,7 +258,8 @@ export function setupSocket() {
       const { gameId } = data;
       const currentGame = games.get(gameId);
       const gameCopy = new Chess();
-      games.set(gameId, {game: gameCopy, white: currentGame!.white, black: currentGame!.black});
+      currentGame?.stockfish?.setPosition("startpos");
+      games.set(gameId, {game: gameCopy, white: currentGame!.white, black: currentGame!.black, stockfish: currentGame?.stockfish});
       const clientMessage = JSON.stringify({
         type: "UPDATE",
         pgn: gameCopy.pgn(),

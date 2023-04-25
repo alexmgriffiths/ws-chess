@@ -3,7 +3,6 @@ import { setupSocket } from "./socket";
 import express, { json } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-
 import apiController from './controllers/apiController';
 
 config();
@@ -11,7 +10,7 @@ setupSocket();
 
 const app = express();
 app.use(json());
-app.use(cors({origin: "https://chess.automic.io"}));
+app.use(cors({origin: "*"}));
 app.use(helmet());
 
 app.use('/api', apiController);
