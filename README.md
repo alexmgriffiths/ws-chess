@@ -80,6 +80,7 @@ Database setup is simple, just download and install MySQL server on your server 
 
 # Todo
 * ~~Piece promotion~~
+* Piece promotion select
 * Global state, Redux?
 * Login / Register redirect to home-page
 * Logout redirect to login
