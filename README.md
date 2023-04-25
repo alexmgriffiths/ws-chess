@@ -79,6 +79,8 @@ For production, you should run this service as www-root and change the permissio
 Database setup is simple, just download and install MySQL server on your server and import the db.sql file in the database folder.
 
 # Todo
+* Piece promotion
+* Global state, Redux?
 * Login / Register redirect to home-page
 * Logout redirect to login
 * Login / Register page styling
@@ -98,3 +100,8 @@ Database setup is simple, just download and install MySQL server on your server 
 * Fix game history display
 * Enter to send chat message
 * Redesign
+* Admin controls
+* Report player
+* Chess engine?
+* Remove /api/users/users endpoint
+* Themes
