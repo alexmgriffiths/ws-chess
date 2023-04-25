@@ -6,6 +6,8 @@ export type GameConnection = {
     game: Chess, 
     white: Player,
     black?: Player,
+    againstAI?: boolean
     stockfish?: Stockfish
     chat?: ChatMessage[],
+    [key: string]: any;
 }
