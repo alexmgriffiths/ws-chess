@@ -1,13 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
 import { checkPassword, hashPassword } from "..//helpers/hashing";
-import { getConnection } from "../helpers/database";
+import { DatabaseHelper } from "../helpers/database";
 
 export default class UsersService {
+  private db;
+
+  constructor() {
+    this.db = new DatabaseHelper();
+  }
+
   public async getUsers() {
-    const db = await getConnection();
     try {
       const sql = "SELECT `email`, `username` FROM `users`";
-      const queryResult = await db.query(sql);
+      const queryResult = await this.db.query(sql);
       return queryResult;
     } catch (e: any) {
       return {
@@ -16,17 +21,14 @@ export default class UsersService {
           error: e,
         },
       };
-    } finally {
-      db.end();
     }
   }
 
   public async getSession(session: string) {
-    const db = await getConnection();
     try {
       const sql =
         "SELECT `id`, `username`, `elo` FROM `users` WHERE `session` = ? LIMIT 1";
-      const queryResult: any = await db.query(sql, [session]);
+      const queryResult: any = await this.db.query(sql, [session]);
       const { id, username, elo } = queryResult[0];
       return { userId: id, username, elo };
     } catch (e: any) {
@@ -36,16 +38,10 @@ export default class UsersService {
           error: e,
         },
       };
-    } finally {
-      db.end();
     }
   }
 
-  // TODO:
-  // * Return session on success
   public async register(email: string, username: string, password: string) {
-    const db = await getConnection();
-
     if (await this.usernameExists(username)) {
       return {
         status: 403,
@@ -76,13 +72,17 @@ export default class UsersService {
     try {
       const sql =
         "INSERT INTO `users` (email, username, password) VALUES (?, ?, ?)";
-      await db.query(sql, [email, username, await hashPassword(password)]);
+      await this.db.query(sql, [
+        email,
+        username,
+        await hashPassword(password),
+      ]);
 
       const token = uuidv4();
-      db.query("UPDATE `users` SET `session` = ? WHERE `email` = ? LIMIT 1", [
-        token,
-        email,
-      ]);
+      this.db.query(
+        "UPDATE `users` SET `session` = ? WHERE `email` = ? LIMIT 1",
+        [token, email]
+      );
 
       return {
         status: 200,
@@ -95,8 +95,6 @@ export default class UsersService {
           error: e,
         },
       };
-    } finally {
-      db.end();
     }
   }
 
@@ -115,12 +113,11 @@ export default class UsersService {
       loginType = "email";
     }
 
-    const db = await getConnection();
     const sql =
       "SELECT `id`, `password` FROM `users` WHERE `" +
       loginType +
       "` = ? LIMIT 1";
-    const queryResult = await db.query(sql, [username]);
+    const queryResult = await this.db.query(sql, [username]);
 
     const passwordValid = await checkPassword(
       password,
@@ -134,7 +131,7 @@ export default class UsersService {
     }
 
     const token = uuidv4();
-    db.query("UPDATE `users` SET `session` = ? WHERE `id` = ? LIMIT 1", [
+    this.db.query("UPDATE `users` SET `session` = ? WHERE `id` = ? LIMIT 1", [
       token,
       queryResult[0].id,
     ]);
@@ -145,30 +142,24 @@ export default class UsersService {
   }
 
   public async usernameExists(username: string): Promise<boolean> {
-    const db = await getConnection();
     try {
       const sql =
         "SELECT COUNT(`id`) as count FROM `users` WHERE `username` = ? LIMIT 1";
-      const queryResult = await db.query(sql, [username]);
+      const queryResult = await this.db.query(sql, [username]);
       return queryResult[0].count === 1;
     } catch {
       return false;
-    } finally {
-      db.end();
     }
   }
 
   public async emailExists(email: string): Promise<boolean> {
-    const db = await getConnection();
     try {
       const sql =
         "SELECT COUNT(`id`) as count FROM `users` WHERE `email` = ? LIMIT 1";
-      const queryResult = await db.query(sql, [email]);
+      const queryResult = await this.db.query(sql, [email]);
       return queryResult[0].count === 1;
     } catch {
       return false;
-    } finally {
-      db.end();
     }
   }
 
@@ -195,5 +186,11 @@ export default class UsersService {
 
     // If all checks pass, the password is considered strong
     return true;
+  }
+
+  public async updateElo(userId: number, elo: number) {
+    // TODO: add this to a tracking table instead of just an update
+    const sql = "UPDATE `users` SET `elo` = ? WHERE `id` = ? LIMIT 1";
+    await this.db.query(sql, [elo, userId]);
   }
 }

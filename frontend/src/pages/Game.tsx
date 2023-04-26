@@ -4,6 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { Navigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { Input } from "../components";
 
 function App() {
   const [socket, setSocket]: any = useState();
@@ -86,7 +87,7 @@ function App() {
           break;
         case "GAMEEVENT":
           const { event } = data;
-          console.log(event);
+          console.log(event, data.data);
           break;
         case "CHATUPDATE":
           const { gameChat } = data;
@@ -238,7 +239,7 @@ function App() {
     setChatMessage("");
   };
 
-  const chatKeyDown = ({ key }: any) => {
+  const chatKeyDown = (key: any) => {
     if (key === "Enter") {
       sendMessage();
     }
@@ -321,14 +322,11 @@ function App() {
                   <br />
                 </div>
               ))}
-            <input
-              type="text"
+            <Input
               placeholder="Chat Message"
-              onChange={(e) => {
-                setChatMessage(e.target.value);
-              }}
-              value={chatMessage}
+              onChange={setChatMessage}
               onKeyDown={chatKeyDown}
+              value={chatMessage}
             />
           </div>
         </div>
