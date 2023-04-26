@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { AuthContext } from "../AuthContext";
 import Cookies from "js-cookie";
 import { Link } from "react-router-dom";
+import { Button, Input } from "../components";
 
 export default function Login() {
   const { setAuthToken } = useContext(AuthContext);
@@ -32,24 +33,26 @@ export default function Login() {
   };
 
   return (
-    <>
-      <input
-        type="text"
-        placeholder="Username / Email"
-        onChange={(e) => {
-          setUsername(e.target.value);
+    <div style={{ width: "100vw", height: "100vh" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxWidth: "20%",
+          gap: "10px",
+          margin: "10% auto",
         }}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => {
-          setPassword(e.target.value);
-        }}
-      />
-      <button onClick={login}>Login</button>
-      <br />
-      <Link to={"/register"}>Register</Link>
-    </>
+      >
+        <h2>Account Login</h2>
+        <Input placeholder="Username / Email" onChange={setUsername} />
+        <Input type="password" placeholder="Password" onChange={setPassword} />
+        <Button onClick={login}>Login</Button>
+        <div>
+          <Link to={"/register"} style={{ float: "right", color: 'white' }}>
+            Register
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

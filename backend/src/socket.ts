@@ -8,6 +8,7 @@ import { User } from "./models/User";
 import UsersService from "./services/userService";
 import { Stockfish } from "./stockfish";
 import { ChatMessage } from "./models/ChatMessage";
+import { calculateEloRating, GameResult } from "./helpers/ratingHelper";
 
 const openings: any = parsePGNFile("eco.pgn");
 const games = new Map<string, GameConnection>();
@@ -174,20 +175,46 @@ function handleMove(socket: WebSocket, data: any) {
     currentGame?.stockfish?.loadFen(gameCopy.fen());
     currentGame?.stockfish?.write("go depth 10");
 
-    if (gameCopy.isCheckmate()) {
-      send(currentGame!.black!.socket!, {
-        type: "GAMEEVENT",
-        error: "CHECKMATE",
-      });
-      send(currentGame!.white!.socket!, {
-        type: "GAMEEVENT",
-        error: "CHECKMATE",
-      });
+    if(gameCopy.isGameOver()) {
+      if(gameCopy.isCheckmate()) {
+        handleCheckmate(gameId);
+        return;
+      } else {
+        sendToGame(gameId, {type: "ERROR", error: "GAMEEVENT UNCHECKD"});
+      }
     }
+
   } catch (e: any) {
     send(socket, { type: "INVALID", error: "INVALID MOVE ENGINE FAIL" });
     return;
   }
+}
+
+async function handleCheckmate(gameId: string) {
+  const game: GameConnection = games.get(gameId) as GameConnection;
+
+  // Don't calculate ELO change against bot
+  if(game?.againstAI) {
+    send(game.white.socket, {type: "GAMEEVENT", event: "CHECKMATE"});
+    return;
+  }
+
+  const whiteUserId = game!.white!.user!.userId;
+  const whiteElo = game!.white!.user!.elo;
+
+  const blackUserId = game!.black!.user!.userId;
+  const blackElo = game!.black!.user!.elo;
+
+  const winner = game!.game.turn() === 'w' ? 'black' : 'white';
+  const whiteNewElo = calculateEloRating(whiteElo, blackElo, winner === "white" ? GameResult.WIN : GameResult.LOSS);
+  const blackNewElo = calculateEloRating(blackElo, whiteElo, winner === "black" ? GameResult.WIN : GameResult.LOSS);
+
+  usersService.updateElo(whiteUserId, whiteNewElo);
+  usersService.updateElo(blackUserId, blackNewElo);
+  
+  send(game.white.socket, {type: "GAMEEVENT", event: "CHECKMATE", data: {winner, elo: whiteNewElo}});
+  send(game!.black!.socket, {type: "GAMEEVENT", event: "CHECKMATE", data: {winner, elo: blackNewElo}});
+
 }
 
 async function handleReset(socket: WebSocket, data: any) {
@@ -262,9 +289,9 @@ async function createNewGame(
   const userData = await usersService.getSession(user);
   const userObject: User = {
     session: user,
-    userId: userData.userId,
-    username: userData.username,
-    elo: userData.elo,
+    userId: userData?.userId,
+    username: userData?.username,
+    elo: userData?.elo,
   };
   games.set(gameId, {
     game: new Chess(),
@@ -279,22 +306,24 @@ async function userInGame(user: string, gameId: any) {
   const currentGame = games.get(gameId);
   const currentUser = await usersService.getSession(user);
 
+  if(!currentUser) return false;
   if (currentGame?.white.user.userId === currentUser.userId) return "white";
   if (currentGame?.black?.user?.userId === currentUser.userId) return "black";
   return false;
 }
 
 async function addToGame(gameId: string, user: string, socket: WebSocket) {
-  const userObject = await getUserFromSession(user);
+  const userObject: User = await getUserFromSession(user);
 
   // Add black, stockfish, and chat to game.
   const game: GameConnection = games.get(gameId) as GameConnection;
-  const updatedGame = {
+  const updatedGame: GameConnection = {
     ...game,
     black: { user: userObject, socket },
     stockfish: new Stockfish(),
     chat: [],
   };
+  if(!updatedGame) return;
   games.set(gameId, updatedGame);
 
   // Start the game for black
@@ -329,13 +358,13 @@ async function sendToGame(gameId: string, message: any) {
   send(blackSocket, message);
 }
 
-async function getUserFromSession(session: string) {
+async function getUserFromSession(session: string): Promise<User> {
   const userData = await usersService.getSession(session);
   const userObject: User = {
     session,
-    userId: userData.userId,
-    username: userData.username,
-    elo: userData.elo,
+    userId: userData?.userId,
+    username: userData?.username,
+    elo: userData?.elo,
   };
   return userObject;
 }

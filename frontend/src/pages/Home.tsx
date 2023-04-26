@@ -1,16 +1,17 @@
 import { useState, useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { AuthContext } from "../AuthContext";
+import { Button, Input } from "../components";
 
 export default function Home(_props: any) {
   const { setAuthToken } = useContext(AuthContext);
 
   const [gameCode, setGameCode] = useState("");
-  const [navigateToGame, setNavigateToGame] = useState(false);
+  const navigate = useNavigate();
 
   const createGame = () => {
-    setNavigateToGame(true);
+    navigate(`/game?gameId=${gameCode}`);
   };
 
   const logout = () => {
@@ -20,18 +21,11 @@ export default function Home(_props: any) {
 
   return (
     <>
-      {navigateToGame && <Navigate to={`/game?gameId=${gameCode}`} />}
       <h1>Home!</h1>
-      Game Code:
-      <input
-        type="text"
-        placeholder="XYZ123456"
-        onChange={(e) => {
-          setGameCode(e.target.value);
-        }}
-        value={gameCode}
-      />
-      <button onClick={createGame}>Join Game</button>
+      <div style={{display: 'flex', flexDirection: 'row', alignItems: 'flex-end'}}>
+        <Input label="Game Code" placeholder="XYZ123456" onChange={setGameCode} value={gameCode}/>
+        <Button onClick={createGame}>Join / Create Game</Button>
+      </div>
       <br />
       <button onClick={logout}>Logout</button>
     </>

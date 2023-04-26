@@ -1,9 +1,13 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../AuthContext";
+import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { Button, Input } from "../components";
 
 export default function Register() {
   const { setAuthToken } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +33,7 @@ export default function Register() {
       const data = await response.json();
       Cookies.set("token", data.data.token, { secure: true, sameSite: "none" });
       setAuthToken(data.data.token);
+      navigate("/");
     } else {
       const data = await response.json();
       console.log(data);
@@ -37,41 +42,32 @@ export default function Register() {
   };
 
   return (
-    <>
-      <h1>Register</h1>
-      <input
-        type="text"
-        placeholder="Email"
-        onChange={(e) => {
-          setEmail(e.target.value);
+    <div style={{ width: "100vw", height: "100vh" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxWidth: "20%",
+          gap: "10px",
+          margin: "10% auto",
         }}
-      />
-      <br />
-      <input
-        type="text"
-        placeholder="Username"
-        onChange={(e) => {
-          setUsername(e.target.value);
-        }}
-      />
-      <br />
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => {
-          setPassword(e.target.value);
-        }}
-      />
-      <br />
-      <input
-        type="password"
-        placeholder="Confirm Password"
-        onChange={(e) => {
-          setConfirmPassword(e.target.value);
-        }}
-      />
-      <br />
-      <button onClick={register}>Register</button>
-    </>
+      >
+        <h2>Sign Up</h2>
+        <Input placeholder="Email" onChange={setEmail} />
+        <Input placeholder="Username" onChange={setUsername} />
+        <Input type="password" placeholder="Password" onChange={setPassword} />
+        <Input
+          type="password"
+          placeholder="Password"
+          onChange={setConfirmPassword}
+        />
+        <Button onClick={register}>Register</Button>
+        <div>
+          <Link to={"/login"} style={{ float: "right", color: "white" }}>
+            Login
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
