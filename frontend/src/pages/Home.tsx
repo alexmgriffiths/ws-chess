@@ -19,12 +19,19 @@ export default function Home(_props: any) {
     setAuthToken("");
   };
 
+  const createBotGame = () => {
+    navigate(`/game?gameId=${Math.floor(Math.random() * 1000000)}${gameCode}&AI=true`);
+  }
+
   return (
     <>
       <h1>Home!</h1>
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'flex-end'}}>
         <Input label="Game Code" placeholder="XYZ123456" onChange={setGameCode} value={gameCode}/>
         <Button onClick={createGame}>Join / Create Game</Button>
+        <br />
+        <Button onClick={createBotGame}>Play again AI</Button>
+        <br/>
       </div>
       <br />
       <button onClick={logout}>Logout</button>

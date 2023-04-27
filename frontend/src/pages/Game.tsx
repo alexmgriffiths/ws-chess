@@ -30,6 +30,8 @@ function App() {
     const params = new URLSearchParams(search);
     const tempGameId =
       params.get("gameId") ?? Math.floor(Math.random() * 100000);
+    const againstAI = params.get("AI") ?? false;
+    console.log("GAME AGAINST AI: ", againstAI ? "YES" : "NO");
     const tempToken = Cookies.get("token") ?? "none";
     setToken(tempToken);
     setGameId(tempGameId);
@@ -45,7 +47,7 @@ function App() {
         data: {
           user: tempToken,
           gameId: tempGameId,
-          againstAI: false,
+          againstAI,
         },
       });
       socketConnection.send(serverMessage);
@@ -57,6 +59,7 @@ function App() {
           // Set last time server was ponged, later, check if server was ponged long time ago, then try to re-connect
           break;
         case "UPDATE":
+          console.log(data);
           const { pgn, comment } = data;
           const gameCopy = new Chess();
           gameCopy.loadPgn(pgn);
@@ -72,7 +75,7 @@ function App() {
           setServerError(error);
           break;
         case "INVALID":
-          console.log(data.error);
+          console.log(data);
           break;
         case "INIT":
           const { color } = data;
