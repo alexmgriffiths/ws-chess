@@ -80,14 +80,21 @@ Database setup is simple, just download and install MySQL server on your server 
 
 # Todo
 * ☑️ ~~Piece promotion~~
-* ⬜️ Piece promotion select
 * ☑️ ~~Global state, Redux?~~
 * ☑️ ~~Login / Register redirect to home-page~~
 * ☑️ ~~Logout redirect to login~~
-* ⬜️ Login / Register page styling
 * ☑️ ~~ELO calculation on checkmate~~
 * ☑️ ~~ELO Update on checkmate~~
 * ☑️ ~~checkmate handling~~
+* ☑️ ~~Chat reset bug~~
+* ☑️ ~~Fix game history display~~
+* ☑️ ~~Enter to send chat message~~
+* ☑️ ~~Chess engine?~~
+* ☑️ ~~Remove /api/users/users endpoint~~
+* ☑️ ~~/login returns 404 error from link on register~~
+* ☑️ ~~Play against bot~~
+* ⬜️ Login / Register page styling
+* ⬜️ Piece promotion select
 * ⬜️ Repition handling
 * ⬜️ Resign handling
 * ⬜️ Threefold-reptition handling
@@ -99,12 +106,9 @@ Database setup is simple, just download and install MySQL server on your server 
 * ⬜️ Player profiles
 * ⬜️ Find games
 * ⬜️ Openings quiz
-* ☑️ ~~Chat reset bug~~
 * ⬜️ Previous move highlights
 * ⬜️ Matchmaking
 * ⬜️ Game score
-* ☑️ ~~Fix game history display~~
-* ☑️ ~~Enter to send chat message~~
 * ⬜️ Redesign game screen
 * ⬜️ Redesign login screen
 * ⬜️ Redesign register screen
@@ -112,8 +116,10 @@ Database setup is simple, just download and install MySQL server on your server 
 * ⬜️ 404 page
 * ⬜️ Admin controls
 * ⬜️ Report player
-* ☑️ ~~Chess engine?~~
-* ☑️ ~~Remove /api/users/users endpoint~~
 * ⬜️ Themes
 * ⬜️ Stockfish clustering
 * ⬜️ Session validation
+* ⬜️ In check warning
+* ⬜️ Resign against bot crashes server due to undefined socket, add check
+* ⬜️ Figure out bot difficulty for ELO
+* ⬜️ Refactor socket.ts

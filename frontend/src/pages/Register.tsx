@@ -63,7 +63,7 @@ export default function Register() {
         />
         <Button onClick={register}>Register</Button>
         <div>
-          <Link to={"/login"} style={{ float: "right", color: "white" }}>
+          <Link to={"/"} style={{ float: "right", color: "white" }}>
             Login
           </Link>
         </div>

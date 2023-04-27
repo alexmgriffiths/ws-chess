@@ -82,12 +82,42 @@ async function handleStart(socket: WebSocket, data: any) {
 
   // Game ID not found, make a new one
   if (games.get(gameId) === undefined) {
-    createNewGame(gameId, user, againstAI, socket);
+    const newGame = await createNewGame(gameId, user, againstAI, socket);
+
+    // If against AI start the game
+    if (againstAI) {
+      games.set(gameId, {...newGame, stockfish: new Stockfish()});
+      send(socket, { type: "UPDATE", pgn: "" });
+      send(socket, {
+        type: "START",
+        opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
+        user: newGame.white.user,
+        chat: [],
+      });
+    }
     return;
   }
 
   // Game ID found, lets retrieve it from memory
   const currentGame = games.get(gameId);
+
+  // Handle window reload of AI game
+  // TODO: Allow user to play as white or black
+  if (currentGame?.againstAI) {
+    if (currentGame.white.user.session === user) {
+      send(socket, { type: "INIT", color: "white" });
+      send(socket, { type: "UPDATE", pgn: currentGame.game.pgn() });
+      send(socket, {
+        type: "START",
+        opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
+        user: currentGame.white.user,
+        chat: [],
+      });
+    } else {
+      send(socket, { type: "ERROR", error: "GAME IS FULL" });
+    }
+    return;
+  }
 
   const currentPlayerColor = await userInGame(user, gameId);
 
@@ -140,7 +170,7 @@ async function handleStart(socket: WebSocket, data: any) {
   }
 }
 
-function handleMove(socket: WebSocket, data: any) {
+async function handleMove(socket: WebSocket, data: any) {
   const { from, to, gameId, user } = data;
   try {
     const currentGame = games.get(gameId);
@@ -168,24 +198,41 @@ function handleMove(socket: WebSocket, data: any) {
       comment,
     });
 
-    currentGame!.black!.socket!.send(clientMessage);
+    // Check stockfish
+    currentGame?.stockfish!.loadFen(gameCopy.fen());
+    currentGame?.stockfish!.write("go depth 10");
+
     currentGame!.white!.socket!.send(clientMessage);
 
-    // Check stockfish
-    currentGame?.stockfish?.loadFen(gameCopy.fen());
-    currentGame?.stockfish?.write("go depth 10");
+    if(currentGame?.againstAI) {
+      // TODO Handle AI checkmate
+      const aiGameCopy = new Chess();
+      aiGameCopy.loadPgn(gameCopy.pgn());
+      const bestMove: string = await currentGame.stockfish?.getBestMove() as string;
+      const from = bestMove.slice(0, 2);
+      const to = bestMove.slice(2);
+      aiGameCopy.move({from, to, promotion: 'q'});
+      currentGame.stockfish!.bestMove = null; // MAKE SURE TO RESET THIS
+      games.set(gameId, {...currentGame!, game: aiGameCopy});
+      
+      // If response is too fast it cancels animations on frontend
+      setTimeout(() => {
+        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), comment: ""}));
+      }, 800);
+      return;
+    }
+    currentGame!.black!.socket!.send(clientMessage);
 
-    if(gameCopy.isGameOver()) {
-      if(gameCopy.isCheckmate()) {
+    if (gameCopy.isGameOver()) {
+      if (gameCopy.isCheckmate()) {
         handleCheckmate(gameId);
         return;
       } else {
-        sendToGame(gameId, {type: "ERROR", error: "GAMEEVENT UNCHECKD"});
+        sendToGame(gameId, { type: "ERROR", error: "GAMEEVENT UNCHECKD" });
       }
     }
-
   } catch (e: any) {
-    send(socket, { type: "INVALID", error: "INVALID MOVE ENGINE FAIL" });
+    send(socket, { type: "INVALID", error: "INVALID MOVE ENGINE FAIL", e });
     return;
   }
 }
@@ -194,8 +241,8 @@ async function handleCheckmate(gameId: string) {
   const game: GameConnection = games.get(gameId) as GameConnection;
 
   // Don't calculate ELO change against bot
-  if(game?.againstAI) {
-    send(game.white.socket, {type: "GAMEEVENT", event: "CHECKMATE"});
+  if (game?.againstAI) {
+    send(game.white.socket, { type: "GAMEEVENT", event: "CHECKMATE" });
     return;
   }
 
@@ -205,16 +252,31 @@ async function handleCheckmate(gameId: string) {
   const blackUserId = game!.black!.user!.userId;
   const blackElo = game!.black!.user!.elo;
 
-  const winner = game!.game.turn() === 'w' ? 'black' : 'white';
-  const whiteNewElo = calculateEloRating(whiteElo, blackElo, winner === "white" ? GameResult.WIN : GameResult.LOSS);
-  const blackNewElo = calculateEloRating(blackElo, whiteElo, winner === "black" ? GameResult.WIN : GameResult.LOSS);
+  const winner = game!.game.turn() === "w" ? "black" : "white";
+  const whiteNewElo = calculateEloRating(
+    whiteElo,
+    blackElo,
+    winner === "white" ? GameResult.WIN : GameResult.LOSS
+  );
+  const blackNewElo = calculateEloRating(
+    blackElo,
+    whiteElo,
+    winner === "black" ? GameResult.WIN : GameResult.LOSS
+  );
 
   usersService.updateElo(whiteUserId, whiteNewElo);
   usersService.updateElo(blackUserId, blackNewElo);
-  
-  send(game.white.socket, {type: "GAMEEVENT", event: "CHECKMATE", data: {winner, elo: whiteNewElo}});
-  send(game!.black!.socket, {type: "GAMEEVENT", event: "CHECKMATE", data: {winner, elo: blackNewElo}});
 
+  send(game.white.socket, {
+    type: "GAMEEVENT",
+    event: "CHECKMATE",
+    data: { winner, elo: whiteNewElo },
+  });
+  send(game!.black!.socket, {
+    type: "GAMEEVENT",
+    event: "CHECKMATE",
+    data: { winner, elo: blackNewElo },
+  });
 }
 
 async function handleReset(socket: WebSocket, data: any) {
@@ -293,20 +355,22 @@ async function createNewGame(
     username: userData?.username,
     elo: userData?.elo,
   };
-  games.set(gameId, {
+  const newGame = {
     game: new Chess(),
     white: { user: userObject, socket },
     againstAI,
     chat: [],
-  });
+  }
+  games.set(gameId, newGame);
   send(socket, { type: "INIT", color: "white" });
+  return newGame;
 }
 
 async function userInGame(user: string, gameId: any) {
   const currentGame = games.get(gameId);
   const currentUser = await usersService.getSession(user);
 
-  if(!currentUser) return false;
+  if (!currentUser) return false;
   if (currentGame?.white.user.userId === currentUser.userId) return "white";
   if (currentGame?.black?.user?.userId === currentUser.userId) return "black";
   return false;
@@ -323,7 +387,7 @@ async function addToGame(gameId: string, user: string, socket: WebSocket) {
     stockfish: new Stockfish(),
     chat: [],
   };
-  if(!updatedGame) return;
+  if (!updatedGame) return;
   games.set(gameId, updatedGame);
 
   // Start the game for black
