@@ -1,3 +1,4 @@
+import { config } from 'dotenv';
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "https";
 import { readFileSync } from "fs";
@@ -10,6 +11,7 @@ import { Stockfish } from "./stockfish";
 import { ChatMessage } from "./models/ChatMessage";
 import { calculateEloRating, GameResult } from "./helpers/ratingHelper";
 
+config();
 const openings: any = parsePGNFile("eco.pgn");
 const games = new Map<string, GameConnection>();
 const usersService = new UsersService();
@@ -87,7 +89,7 @@ async function handleStart(socket: WebSocket, data: any) {
     // If against AI start the game
     if (againstAI) {
       games.set(gameId, {...newGame, stockfish: new Stockfish()});
-      send(socket, { type: "UPDATE", pgn: "" });
+      send(socket, { type: "UPDATE", pgn: "", history: [newGame.game.fen()] });
       send(socket, {
         type: "START",
         opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
@@ -105,8 +107,9 @@ async function handleStart(socket: WebSocket, data: any) {
   // TODO: Allow user to play as white or black
   if (currentGame?.againstAI) {
     if (currentGame.white.user.session === user) {
+      games.set(gameId, {...currentGame, white: {...currentGame!.white, socket}});
       send(socket, { type: "INIT", color: "white" });
-      send(socket, { type: "UPDATE", pgn: currentGame.game.pgn() });
+      send(socket, { type: "UPDATE", pgn: currentGame.game.pgn(), history: currentGame.history, comment: currentGame.comment });
       send(socket, {
         type: "START",
         opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
@@ -151,7 +154,7 @@ async function handleStart(socket: WebSocket, data: any) {
 
   games.set(gameId, updatedGame);
   send(socket, { type: "INIT", color: currentPlayerColor });
-  send(socket, { type: "UPDATE", pgn: updatedGame!.game.pgn() });
+  send(socket, { type: "UPDATE", pgn: updatedGame!.game.pgn(), history: currentGame!.history, comment: currentGame!.comment ?? "" });
 
   // Don't force re-connecting user's back into loading screen
   if (updatedGame?.black?.user !== undefined) {
@@ -171,6 +174,7 @@ async function handleStart(socket: WebSocket, data: any) {
 }
 
 async function handleMove(socket: WebSocket, data: any) {
+  console.log("HANDLE MOVE");
   const { from, to, gameId, user } = data;
   try {
     const currentGame = games.get(gameId);
@@ -184,7 +188,9 @@ async function handleMove(socket: WebSocket, data: any) {
     const gameCopy = new Chess();
     gameCopy.loadPgn(currentGame!.game.pgn());
     gameCopy.move({ from, to, promotion: "q" });
-    games.set(gameId, { ...currentGame!, game: gameCopy });
+    
+    currentGame!.history.push(gameCopy.fen());
+    games.set(gameId, { ...currentGame!, game: gameCopy, history: currentGame!.history });
 
     let comment = "";
     if (openings[gameCopy.pgn()] !== undefined) {
@@ -195,16 +201,19 @@ async function handleMove(socket: WebSocket, data: any) {
     const clientMessage = JSON.stringify({
       type: "UPDATE",
       pgn: gameCopy.pgn(),
+      history: currentGame!.history,
       comment,
     });
 
     // Check stockfish
     currentGame?.stockfish!.loadFen(gameCopy.fen());
-    currentGame?.stockfish!.write("go depth 10");
+    currentGame?.stockfish!.write("go depth 1");
 
     currentGame!.white!.socket!.send(clientMessage);
 
+    // TODO: Refactor all of this
     if(currentGame?.againstAI) {
+      console.log("Handling AI move");
       // TODO Handle AI checkmate
       const aiGameCopy = new Chess();
       aiGameCopy.loadPgn(gameCopy.pgn());
@@ -213,11 +222,15 @@ async function handleMove(socket: WebSocket, data: any) {
       const to = bestMove.slice(2);
       aiGameCopy.move({from, to, promotion: 'q'});
       currentGame.stockfish!.bestMove = null; // MAKE SURE TO RESET THIS
-      games.set(gameId, {...currentGame!, game: aiGameCopy});
+
+      currentGame!.history.push(aiGameCopy.fen());
+      games.set(gameId, {...currentGame!, game: aiGameCopy, history: currentGame!.history});
       
       // If response is too fast it cancels animations on frontend
       setTimeout(() => {
-        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), comment: ""}));
+        console.log("Sending AI move to game");
+        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), history: currentGame!.history}));
+        console.log("AI move has been sentt to client")
       }, 800);
       return;
     }
@@ -301,6 +314,7 @@ async function handleReset(socket: WebSocket, data: any) {
   sendToGame(gameId, {
     type: "UPDATE",
     pgn: gameCopy.pgn(),
+    history: currentGame!.history,
     comment: "",
   });
 }
@@ -339,6 +353,10 @@ async function handleChat(socket: WebSocket, data: any) {
   }
   const clientMessage = { type: "CHATUPDATE", gameChat: tempGameChat };
   games.set(gameId, { ...currentGame!, chat: tempGameChat });
+  if(currentGame?.againstAI) {
+    send(currentGame.white.socket, clientMessage);
+    return;
+  }
   sendToGame(gameId, clientMessage);
 }
 
@@ -355,8 +373,11 @@ async function createNewGame(
     username: userData?.username,
     elo: userData?.elo,
   };
+
+  const newGameObject = new Chess();
   const newGame = {
-    game: new Chess(),
+    game: newGameObject,
+    history: [newGameObject.fen()],
     white: { user: userObject, socket },
     againstAI,
     chat: [],

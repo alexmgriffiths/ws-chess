@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { Navigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { Input } from "../components";
+import { Button, Input } from "../components";
 
 function App() {
   const [socket, setSocket]: any = useState();
@@ -20,6 +20,10 @@ function App() {
   const [gameReady, setGameReady]: any = useState(false);
   const [playerColor, setPlayerColor]: any = useState("white");
   const [game, setGame] = useState(new Chess());
+
+  const [gameHistoryIndex, setGameHistoryIndex] = useState(0);
+  const [gameFenHistory, setGameFenHistory]: any[] = useState([new Chess().fen()]);
+  
   const [gameComment, setGameComment] = useState("");
   const [moveFrom, setMoveFrom] = useState("");
   const [squareOptions, setSquareOptions] = useState({});
@@ -60,7 +64,8 @@ function App() {
           break;
         case "UPDATE":
           console.log(data);
-          const { pgn, comment } = data;
+
+          const { pgn, history, comment } = data;
           const gameCopy = new Chess();
           gameCopy.loadPgn(pgn);
           if (comment && comment.length > 0) {
@@ -69,6 +74,12 @@ function App() {
           setSquareOptions({});
           setMoveFrom("");
           setGame(gameCopy);
+          setGameFenHistory(history);
+
+          console.log("SETTING GAME HISTORY INDEX TO ", history.length);
+          const newGameHistoryIndex = history.length - 1;
+          setGameHistoryIndex(newGameHistoryIndex);
+
           break;
         case "ERROR":
           const { error } = data;
@@ -105,25 +116,25 @@ function App() {
     setSocket(socketConnection);
   }, []);
 
-  //const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
+  const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
 
-  // const customPieces = () => {
-  //   const returnPieces: any = {};
-  //   pieces.map((p) => {
-  //     returnPieces[p] = ({ squareWidth }: any) => (
-  //       <div
-  //         style={{
-  //           width: squareWidth,
-  //           height: squareWidth,
-  //           backgroundImage: `url(/pieces/${p}.png)`,
-  //           backgroundSize: "100%",
-  //         }}
-  //       />
-  //     );
-  //     return null;
-  //   });
-  //   return returnPieces;
-  // };
+  const customPieces = () => {
+    const returnPieces: any = {};
+    pieces.map((p) => {
+      returnPieces[p] = ({ squareWidth }: any) => (
+        <div
+          style={{
+            width: squareWidth,
+            height: squareWidth,
+            backgroundImage: `url(/pieces/${p}.png)`,
+            backgroundSize: "100%",
+          }}
+        />
+      );
+      return null;
+    });
+    return returnPieces;
+  };
 
   const makeMove = (
     from: Square,
@@ -248,6 +259,14 @@ function App() {
     }
   };
 
+  const handleHistoryNavigate = (historyIndex: number) => {
+    if(historyIndex > gameFenHistory.length - 1 || historyIndex < 0) {
+      return;
+    }
+    game.load(gameFenHistory[historyIndex]);
+    setGameHistoryIndex(historyIndex);
+  }
+
   if (token === "none") {
     return (
       <>
@@ -292,7 +311,7 @@ function App() {
               }}
               // customDarkSquareStyle={{ backgroundColor: "#779952" }}
               // customLightSquareStyle={{ backgroundColor: "#edeed1" }}
-              // customPieces={customPieces()}
+              customPieces={customPieces()}
               customSquareStyles={{
                 ...squareOptions,
                 ...rightClickedSquares,
@@ -308,12 +327,18 @@ function App() {
         <div id="rightSide">
           <div id="history">
             <h3>{gameComment}</h3>
-            {game.history().map((move, index) => (
-              <>
-                <span key={index}>{move}</span>
+            {gameFenHistory && gameFenHistory.map((move: string, index: number) => (
+              <div key={index}>
+                <span>{move}</span>
                 <br />
-              </>
+              </div>
             ))}
+          </div>
+          <div style={{display: "flex", flexDirection: "row", gap: "10px", width: '100%', justifyContent: 'center'}}>
+            <Button onClick={() => handleHistoryNavigate(0)}>Beginning</Button>
+            <Button onClick={() => handleHistoryNavigate(gameHistoryIndex - 1)}>Back</Button>
+            <Button onClick={() => handleHistoryNavigate(gameHistoryIndex + 1)}>Forward</Button>
+            <Button onClick={() => handleHistoryNavigate(gameFenHistory.length - 1)}>Current</Button>
           </div>
           <div id="history">
             {gameChat &&
