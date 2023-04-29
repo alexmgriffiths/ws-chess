@@ -40,9 +40,9 @@ const ModalButton = styled.button`
   }
 `
 
-export function Button({ children, onClick, style="primary" }: any) {
+export function Button({ children, onClick, type="primary" }: any) {
 
-  if(style === "primary") {
+  if(type === "primary") {
     return (
       <ButtonWrapper onClick={onClick}>
         {children}

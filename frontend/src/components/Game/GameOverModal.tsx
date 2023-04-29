@@ -124,7 +124,7 @@ export const GameOverModal = ({ isOpen, onClose, type="Draw", endType="Stalemate
           }
         }
     }
-  }, [isOpen, displayedScore, elo]);
+  }, [isOpen, displayedScore, elo, newElo]);
 
 
   if(type === "Lose") {
@@ -167,8 +167,8 @@ export const GameOverModal = ({ isOpen, onClose, type="Draw", endType="Stalemate
                   {displayedScore}
               </ModalTextContent>
               <ButtonHolder>
-                  <Button onClick={handleRematch} style="modal">Rematch</Button>
-                  <Button onClick={handleNewGame} style="modal">New Game</Button>
+                  <Button onClick={handleRematch} type="modal">Rematch</Button>
+                  <Button onClick={handleNewGame} type="modal">New Game</Button>
               </ButtonHolder>
             </ModalContent>
           </ModalContainer>
@@ -191,8 +191,8 @@ export const GameOverModal = ({ isOpen, onClose, type="Draw", endType="Stalemate
                 {displayedScore}
             </ModalTextContent>
             <ButtonHolder>
-                <Button onClick={handleRematch} style="modal">Rematch</Button>
-                <Button onClick={handleNewGame} style="modal">New Game</Button>
+                <Button onClick={handleRematch} type="modal">Rematch</Button>
+                <Button onClick={handleNewGame} type="modal">New Game</Button>
             </ButtonHolder>
           </ModalContent>
         </ModalContainer>
