@@ -6,10 +6,10 @@ import { Chess } from "chess.js";
 import { GameConnection } from "./models/GameConnection";
 import { parsePGNFile } from "./helpers/PGNHelper";
 import { User } from "./models/User";
-import UsersService from "./services/userService";
 import { Stockfish } from "./stockfish";
 import { ChatMessage } from "./models/ChatMessage";
 import { calculateEloRating, GameResult } from "./helpers/ratingHelper";
+import UsersService from "./services/userService";
 
 config();
 const openings: any = parsePGNFile("eco.pgn");
@@ -236,8 +236,9 @@ async function handleMove(socket: WebSocket, data: any) {
     }
     currentGame!.black!.socket!.send(clientMessage);
 
+    // TODO: Split these up / make it so frontend can distinguish
     if (gameCopy.isGameOver()) {
-      if (gameCopy.isCheckmate()) {
+      if (gameCopy.isCheckmate() || gameCopy.isInsufficientMaterial() || gameCopy.isThreefoldRepetition()) {
         handleCheckmate(gameId);
         return;
       } else {
