@@ -3,7 +3,6 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { GamePlayer, GameChat, GameHistoryNavigator, GameHistory, GameOverModal } from "../components/Game";
-import { Button } from "../components";
 import { initGameSocket } from "../services/socket";
 import { AuthContext } from "../AuthContext";
 import { WaitingForOpponent } from "./WaitingForOpponent";
@@ -63,7 +62,7 @@ function App() {
       handleGameOver,
       setSocket
     );
-  }, []);
+  }, [authToken]);
 
   
   const handleGameOver = (type: string, elo: number, result: string) => {
