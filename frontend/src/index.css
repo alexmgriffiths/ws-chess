@@ -58,3 +58,23 @@ code {
 .eloContainer {
   margin:0 5px;
 }
+
+#chessContainer {
+  width: 620px;
+}
+
+@media screen and (max-width: 1100px) {
+  #chessContent {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin:20px auto;
+  }
+}
+
+@media screen and (max-width: 650px) {
+  #chessContainer {
+    width: 90vw;
+  }
+}

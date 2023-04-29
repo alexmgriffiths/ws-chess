@@ -4,7 +4,7 @@ services:
     image: mysql:5.7
     restart: always
     environment:
-      MYSQL_DATABASE: 'db'
+      MYSQL_DATABASE: 'chess'
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'password'
@@ -13,6 +13,12 @@ services:
     expose:
       - '3306'
     volumes:
+      - ./db.sql:/docker-entrypoint-initdb.d/setup.sql
       - my-db:/var/lib/mysql
+    command: 
+      - --table_definition_cache=100
+      - --performance_schema=0
+      - --default-authentication-plugin=mysql_native_password
+      - --innodb_use_native_aio=0
 volumes:
   my-db:
