@@ -3,6 +3,31 @@
 
 This is a multi-player chess application built using chess.js, react-chessboard, and ws featuring chat, server-side move validation, opening book game-comments, and user login/registration.
 
+# Development
+
+`frontend/.env`
+
+    PORT=3002
+    REACT_APP_API_URL=http://localhost:3001/api
+    REACT_APP_WS_URL=ws://localhost:8080
+    ENV=dev
+
+`backend/.env`
+
+    PORT=3001
+    WS_PORT=8080
+    DB_HOST=127.0.0.1
+    DB_USER=user
+    DB_PASS=password
+    DB_NAME=chess
+    SF_BINARY=
+    CERT_PATH=
+    CERT_KEY=
+    ENV=dev
+
+For local developmenet, CERT_PATH and CERT_KEY can be left blank, but you'll need to install a command line version of stockfish and put the path for SF_BINARY. On Linux based machines this is typically /usr/games/stockfish
+
+# Production
 # Infrastructure
 
 This application is deployed behind Cloudflare pointing to an AWS EC2 instance running Nginx for routing. The server is running a MySQL database, but if you plan to use this for production you should use a dedicated database service like RDS.
@@ -93,6 +118,8 @@ Database setup is simple, just download and install MySQL server on your server 
 * ☑️ ~~Remove /api/users/users endpoint~~
 * ☑️ ~~/login returns 404 error from link on register~~
 * ☑️ ~~Play against bot~~
+* ☑️ ~~Game history~~
+* ☑️ ~~Chess board mobile responsive~~
 * ⬜️ Login / Register page styling
 * ⬜️ Piece promotion select
 * ⬜️ Repition handling

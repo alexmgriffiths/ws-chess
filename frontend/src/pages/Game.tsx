@@ -32,10 +32,9 @@ function App() {
   useEffect(() => {
     const search = window.location.search;
     const params = new URLSearchParams(search);
-    const tempGameId =
+    const tempGameId = 
       params.get("gameId") ?? Math.floor(Math.random() * 100000);
     const againstAI = params.get("AI") ?? false;
-    console.log("GAME AGAINST AI: ", againstAI ? "YES" : "NO");
     const tempToken = Cookies.get("token") ?? "none";
     setToken(tempToken);
     setGameId(tempGameId);
@@ -298,7 +297,6 @@ function App() {
           </div>
           <div id="chessContainer">
             <Chessboard
-              boardWidth={620}
               position={game.fen()}
               arePiecesDraggable={false}
               onPieceDragBegin={onPieceDrag}
