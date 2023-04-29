@@ -284,12 +284,12 @@ async function handleCheckmate(gameId: string) {
   send(game.white.socket, {
     type: "GAMEEVENT",
     event: "CHECKMATE",
-    data: { winner, elo: whiteNewElo },
+    eventData: { elo: whiteNewElo, result: winner === "white" ? "Win" : "Lose" },
   });
   send(game!.black!.socket, {
     type: "GAMEEVENT",
     event: "CHECKMATE",
-    data: { winner, elo: blackNewElo },
+    eventData: { elo: blackNewElo, result: winner === "black" ? "Win" : "Lose" },
   });
 }
 

@@ -2,7 +2,8 @@ import { useState, useEffect, useContext } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
-import { GamePlayer, GameChat, GameHistoryNavigator, GameHistory, Button, Modal } from "../components";
+import { GamePlayer, GameChat, GameHistoryNavigator, GameHistory, GameOverModal } from "../components/Game";
+import { Button } from "../components";
 import { initGameSocket } from "../services/socket";
 import { AuthContext } from "../AuthContext";
 import { WaitingForOpponent } from "./WaitingForOpponent";
@@ -32,6 +33,9 @@ function App() {
   const [rightClickedSquares, setRightClickedSquares]: any = useState({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [gameOverType, setGameOverType] = useState("");
+  const [gameResult, setGameResult] = useState("");
+  const [newElo, setNewElo] = useState(0);
 
   useEffect(() => {
     const search = window.location.search;
@@ -56,9 +60,18 @@ function App() {
       setUser,
       setGameChat,
       setGameReady,
+      handleGameOver,
       setSocket
     );
   }, []);
+
+  
+  const handleGameOver = (type: string, elo: number, result: string) => {
+    setGameResult(result);
+    setGameOverType(type);
+    setNewElo(elo);
+    setIsModalOpen(true);
+  }
 
   const pieces = ["wP", "wN", "wB", "wR", "wQ", "wK", "bP", "bN", "bB", "bR", "bQ", "bK"];
   const customPieces = () => {
@@ -179,6 +192,10 @@ function App() {
     }
   };
 
+  const handleRematch = () => {
+    alert("Coming soon!");
+  }
+
   if (serverError.length > 0) {
     return <h1>Server Error: {serverError}</h1>;
   }
@@ -190,13 +207,10 @@ function App() {
   return (
     <div id="page">
       <div id="chessContent">
-        <Button onClick={() => {setIsModalOpen(true)}}>Open Modal</Button>
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <h1>HI!</h1>
-        </Modal>
         <div id="chessboard">
           <GamePlayer username={opponent.username} elo={opponent.elo} />
           <div id="chessContainer">
+            <GameOverModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} type={gameResult} endType={gameOverType} elo={user.elo} newElo={newElo} handleRematch={handleRematch} handleNewGame={handleRematch}/>
             <Chessboard
               position={game.fen()}
               arePiecesDraggable={true}

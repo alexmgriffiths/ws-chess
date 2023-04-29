@@ -16,6 +16,7 @@ export const initGameSocket = async (
     setUser: React.Dispatch<React.SetStateAction<{}>>,
     setGameChat: React.Dispatch<React.SetStateAction<{}>>,
     setGameReady: React.Dispatch<React.SetStateAction<boolean>>,
+    handleGameOver: any,
     socketConnectionCallback: any
     ) => {
     const socketConnection: WebSocket = new WebSocket(
@@ -57,7 +58,6 @@ export const initGameSocket = async (
             setGame(gameCopy);
             setGameFenHistory(history);
 
-            console.log("SETTING GAME HISTORY INDEX TO ", history.length);
             const newGameHistoryIndex = history.length - 1;
             setGameHistoryIndex(newGameHistoryIndex);
 
@@ -74,7 +74,6 @@ export const initGameSocket = async (
             setPlayerColor(color);
             break;
             case "START":
-                console.log("Start handled");
             const { opponent } = data;
             setOpponent(opponent);
             setUser(data.user);
@@ -82,9 +81,13 @@ export const initGameSocket = async (
             setGameReady(true);
             break;
             case "GAMEEVENT":
-            const { event } = data;
-            alert(event);
-            console.log(event, data.data);
+            const { event, eventData } = data;
+            const { elo, result } = eventData;
+            if(event === "CHECKMATE") {
+                handleGameOver("Checkmate", elo, result);
+                return;
+            }
+    
             break;
             case "CHATUPDATE":
             const { gameChat } = data;

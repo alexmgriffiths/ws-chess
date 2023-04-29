@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Input } from './Input';
+import { Input } from '../Input';
 
 export const GameChat = ({gameChat, gameId, socket}: any) => {
 

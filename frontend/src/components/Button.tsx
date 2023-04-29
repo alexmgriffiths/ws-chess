@@ -19,10 +19,40 @@ const ButtonWrapper = styled.button`
   }
 `;
 
-export function Button({ children, onClick }: any) {
-  return (
-    <ButtonWrapper onClick={onClick}>
-      {children}
-    </ButtonWrapper>
-  );
+const ModalButton = styled.button`
+  padding: 16px 24px;
+  background-color: #EAEAEA;
+  color: #555;
+  font-weight: bold;
+  letter-spacing:1px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  max-height: 48px;
+  &:hover {
+    background-color: #DFDFDF;
+  }
+
+  &:active {
+    background-color: #CFCFCF;
+  }
+`
+
+export function Button({ children, onClick, style="primary" }: any) {
+
+  if(style === "primary") {
+    return (
+      <ButtonWrapper onClick={onClick}>
+        {children}
+      </ButtonWrapper>
+    );
+  } else {
+    return (
+      <ModalButton onClick={onClick}>
+        {children}
+      </ModalButton>
+    );
+  }
 }

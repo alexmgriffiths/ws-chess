@@ -1,4 +1,4 @@
-import { GamePlayerType } from "../models/GamePlayerType"
+import { GamePlayerType } from "../../models/GamePlayerType"
 export const GamePlayer = ({username, elo}: GamePlayerType) => {
     return (
         <div className="playerContainer">
