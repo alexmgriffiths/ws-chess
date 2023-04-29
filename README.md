@@ -120,14 +120,15 @@ Database setup is simple, just download and install MySQL server on your server 
 * ☑️ ~~Play against bot~~
 * ☑️ ~~Game history~~
 * ☑️ ~~Chess board mobile responsive~~
+* ☑️ ~~Game-over UI~~
+* ⬜️ Fix game over score animation
 * ⬜️ Login / Register page styling
 * ⬜️ Piece promotion select
-* ⬜️ Repition handling
+* ⬜️ Repetition handling
 * ⬜️ Resign handling
 * ⬜️ Threefold-reptition handling
 * ⬜️ Stalemate handling
 * ⬜️ Insufficient material handling
-* ⬜️ Game-over UI
 * ⬜️ Reconnection on socket drop
 * ⬜️ Valid username regex
 * ⬜️ Player profiles
