@@ -100,6 +100,7 @@ function App() {
           break;
         case "GAMEEVENT":
           const { event } = data;
+          alert(event);
           console.log(event, data.data);
           break;
         case "CHATUPDATE":
