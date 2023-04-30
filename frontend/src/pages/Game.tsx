@@ -25,9 +25,12 @@ function App() {
 
   const [gameHistoryIndex, setGameHistoryIndex] = useState(0);
   const [gameFenHistory, setGameFenHistory] = useState([new Chess().fen()]);
-  
+  const [gameMoveHistory, setGameMoveHistory]: any = useState([]);
+
   const [gameComment, setGameComment] = useState("");
   const [moveFrom, setMoveFrom] = useState("");
+
+  const [highlightedMoveHistory, setHighlightedMoveHistory] = useState({});
   const [squareOptions, setSquareOptions] = useState({});
   const [rightClickedSquares, setRightClickedSquares]: any = useState({});
 
@@ -52,6 +55,7 @@ function App() {
       setMoveFrom,
       setGame,
       setGameFenHistory,
+      setGameMoveHistory,
       setGameHistoryIndex,
       setServerError,
       setPlayerColor,
@@ -64,6 +68,17 @@ function App() {
     );
   }, [authToken]);
 
+  useEffect(() => {
+    const newSquares: any = {};
+    if(gameMoveHistory && gameMoveHistory.length > 0) {
+      const newest = gameMoveHistory[gameMoveHistory.length - 1];
+      if(newest) {
+        newSquares[newest.from] = { background: "rgba(255, 255, 0, 0.4)" }
+        newSquares[newest.to] = { background: "rgba(255, 255, 0, 0.4)" }
+      }
+    }
+    setHighlightedMoveHistory(newSquares);
+  }, [gameMoveHistory]);
   
   const handleGameOver = (type: string, elo: number, result: string) => {
     setGameResult(result);
@@ -133,6 +148,7 @@ function App() {
     newSquares[square] = {
       background: "rgba(255, 255, 0, 0.4)",
     };
+
     setSquareOptions(newSquares);
     return true;
   };
@@ -227,6 +243,7 @@ function App() {
               customSquareStyles={{
                 ...squareOptions,
                 ...rightClickedSquares,
+                ...highlightedMoveHistory
               }}
               boardOrientation={playerColor}
             />

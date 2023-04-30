@@ -1,4 +1,5 @@
 import { Chess } from "chess.js";
+import { GameMoveType } from "../models/GameMoveType";
 
 export const initGameSocket = async (
     token: string, 
@@ -9,6 +10,7 @@ export const initGameSocket = async (
     setMoveFrom: React.Dispatch<React.SetStateAction<string>>,
     setGame: React.Dispatch<React.SetStateAction<Chess>>,
     setGameFenHistory: React.Dispatch<React.SetStateAction<string[]>>,
+    setGameMoveHistory: React.Dispatch<React.SetStateAction<GameMoveType[]>>,
     setGameHistoryIndex: React.Dispatch<React.SetStateAction<number>>,
     setServerError: React.Dispatch<React.SetStateAction<string>>,
     setPlayerColor: React.Dispatch<React.SetStateAction<string>>,
@@ -38,16 +40,13 @@ export const initGameSocket = async (
         };
         socketConnection.onmessage = (event: any) => {
         const data = JSON.parse(event.data as unknown as string);
-        console.log(data, event);
         switch (data.type) {
             case "PONG":
                 console.log("PONG");
             // Set last time server was ponged, later, check if server was ponged long time ago, then try to re-connect
             break;
             case "UPDATE":
-            console.log(data);
-
-            const { pgn, history, comment } = data;
+            const { pgn, history, comment, move } = data;
             const gameCopy = new Chess();
             gameCopy.loadPgn(pgn);
             if (comment && comment.length > 0) {
@@ -57,7 +56,7 @@ export const initGameSocket = async (
             setMoveFrom("");
             setGame(gameCopy);
             setGameFenHistory(history);
-
+            setGameMoveHistory((moveHistory) => [...moveHistory, move]);
             const newGameHistoryIndex = history.length - 1;
             setGameHistoryIndex(newGameHistoryIndex);
 
