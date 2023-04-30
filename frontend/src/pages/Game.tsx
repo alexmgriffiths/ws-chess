@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext } from "react";
-import { Chess } from "chess.js";
+import { Chess, PieceSymbol } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { GamePlayer, GameChat, GameHistoryNavigator, GameHistory, GameOverModal } from "../components/Game";
 import { initGameSocket } from "../services/socket";
 import { AuthContext } from "../AuthContext";
 import { WaitingForOpponent } from "./WaitingForOpponent";
+import { Button } from "../components";
 
 function App() {
   
@@ -22,6 +23,7 @@ function App() {
   const [gameReady, setGameReady]: any = useState(false);
   const [playerColor, setPlayerColor]: any = useState("white");
   const [game, setGame] = useState(new Chess());
+  const [inCheck, setInCheck] = useState(false);
 
   const [gameHistoryIndex, setGameHistoryIndex] = useState(0);
   const [gameFenHistory, setGameFenHistory] = useState([new Chess().fen()]);
@@ -63,6 +65,7 @@ function App() {
       setUser,
       setGameChat,
       setGameReady,
+      setInCheck,
       handleGameOver,
       setSocket
     );
@@ -71,14 +74,27 @@ function App() {
   useEffect(() => {
     const newSquares: any = {};
     if(gameMoveHistory && gameMoveHistory.length > 0) {
-      const newest = gameMoveHistory[gameMoveHistory.length - 1];
+      const newest = gameMoveHistory[gameHistoryIndex - 1];
       if(newest) {
         newSquares[newest.from] = { background: "rgba(255, 255, 0, 0.4)" }
         newSquares[newest.to] = { background: "rgba(255, 255, 0, 0.4)" }
       }
     }
+
+    if(inCheck !== false) {
+      game.board().forEach((row) => {
+        row.forEach((piece: any) => {
+          if (piece && piece.type === "k" && piece.color === inCheck) {
+            newSquares[piece.square] = { background: 'rgba(255, 0, 0, 0.4)' };
+          };
+        });
+      });
+    }
+
     setHighlightedMoveHistory(newSquares);
-  }, [gameMoveHistory]);
+  }, [gameMoveHistory, gameHistoryIndex, inCheck]);
+
+
   
   const handleGameOver = (type: string, elo: number, result: string) => {
     setGameResult(result);
@@ -211,6 +227,11 @@ function App() {
     alert("Coming soon!");
   }
 
+  const resign = () => {
+    const serverMessage = JSON.stringify({type: "RESIGN", data: { gameId }});
+    socket.send(serverMessage);
+  }
+
   if (serverError.length > 0) {
     return <h1>Server Error: {serverError}</h1>;
   }
@@ -253,6 +274,7 @@ function App() {
         <div id="rightSide">
           <GameHistory gameComment={gameComment} gameFenHistory={gameFenHistory} />
           <GameHistoryNavigator gameHistoryIndex={gameHistoryIndex} setGameHistoryIndex={setGameHistoryIndex} gameFenHistory={gameFenHistory} game={game} />
+          <Button onClick={resign}>Resign</Button>
           <GameChat gameChat={gameChat} gameId={gameId} socket={socket} />
         </div>
       </div>

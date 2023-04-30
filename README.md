@@ -121,20 +121,23 @@ Database setup is simple, just download and install MySQL server on your server 
 * ☑️ ~~Game history~~
 * ☑️ ~~Chess board mobile responsive~~
 * ☑️ ~~Game-over UI~~
+* ☑️ ~~Valid username regex~~
+* ☑️ ~~Valid email regex~~
+* ☑️ ~~Resign against bot crashes server due to undefined socket, add check~~
+* ☑️ ~~Previous move highlights~~
+* ☑️ ~~In check warning~~
+* ☑️ ~~Resign handling~~
+* ☑️ ~~Repetition handling~~
+* ☑️ ~~Stalemate handling~~
+* ☑️ ~~Insufficient material handling~~
+* ☑️ ~~Threefold-reptition handling~~
 * ⬜️ Fix game over score animation
 * ⬜️ Login / Register page styling
 * ⬜️ Piece promotion select
-* ⬜️ Repetition handling
-* ⬜️ Resign handling
-* ⬜️ Threefold-reptition handling
-* ⬜️ Stalemate handling
-* ⬜️ Insufficient material handling
 * ⬜️ Reconnection on socket drop
-* ⬜️ Valid username regex
 * ⬜️ Player profiles
 * ⬜️ Find games
 * ⬜️ Openings quiz
-* ⬜️ Previous move highlights
 * ⬜️ Matchmaking
 * ⬜️ Game score
 * ⬜️ Redesign game screen
@@ -147,7 +150,5 @@ Database setup is simple, just download and install MySQL server on your server 
 * ⬜️ Themes
 * ⬜️ Stockfish clustering
 * ⬜️ Session validation
-* ⬜️ In check warning
-* ⬜️ Resign against bot crashes server due to undefined socket, add check
 * ⬜️ Figure out bot difficulty for ELO
 * ⬜️ Refactor socket.ts
