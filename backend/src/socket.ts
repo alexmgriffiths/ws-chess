@@ -174,7 +174,6 @@ async function handleStart(socket: WebSocket, data: any) {
 }
 
 async function handleMove(socket: WebSocket, data: any) {
-  console.log("HANDLE MOVE");
   const { from, to, gameId, user } = data;
   try {
     const currentGame = games.get(gameId);
@@ -203,6 +202,7 @@ async function handleMove(socket: WebSocket, data: any) {
       pgn: gameCopy.pgn(),
       history: currentGame!.history,
       comment,
+      move: {from, to}
     });
 
     // Check stockfish
@@ -228,9 +228,7 @@ async function handleMove(socket: WebSocket, data: any) {
       
       // If response is too fast it cancels animations on frontend
       setTimeout(() => {
-        console.log("Sending AI move to game");
-        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), history: currentGame!.history}));
-        console.log("AI move has been sentt to client")
+        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), history: currentGame!.history, comment: currentGame!.comment, move: {from, to}}));
       }, 800);
       return;
     }
@@ -376,9 +374,10 @@ async function createNewGame(
   };
 
   const newGameObject = new Chess();
-  const newGame = {
+  const newGame: GameConnection = {
     game: newGameObject,
     history: [newGameObject.fen()],
+    moveHistory: [],
     white: { user: userObject, socket },
     againstAI,
     chat: [],
