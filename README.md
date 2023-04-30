@@ -131,8 +131,8 @@ Database setup is simple, just download and install MySQL server on your server 
 * ☑️ ~~Stalemate handling~~
 * ☑️ ~~Insufficient material handling~~
 * ☑️ ~~Threefold-repetition handling~~
+* ☑️ ~~Fix game over score animation~~
 * ⬜️ Propose draw
-* ⬜️ Fix game over score animation
 * ⬜️ Login / Register page styling
 * ⬜️ Piece promotion select
 * ⬜️ Reconnection on socket drop
