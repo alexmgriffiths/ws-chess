@@ -92,7 +92,7 @@ function App() {
     }
 
     setHighlightedMoveHistory(newSquares);
-  }, [gameMoveHistory, gameHistoryIndex, inCheck]);
+  }, [gameMoveHistory, gameHistoryIndex, inCheck, game]);
 
 
   
