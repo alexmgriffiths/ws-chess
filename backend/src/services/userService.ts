@@ -42,29 +42,19 @@ export default class UsersService {
   }
 
   public async register(email: string, username: string, password: string) {
-    if (await this.usernameExists(username)) {
-      return {
-        status: 403,
-        data: {
-          error: "Username already exists",
-        },
-      };
-    }
+    let error = null;
 
-    if (await this.emailExists(email)) {
-      return {
-        status: 403,
-        data: {
-          error: "Email already exists",
-        },
-      };
-    }
+    if(!this.usernameValid(username)) error = "Username invalid";
+    if (await this.usernameExists(username)) error = "Username already exists";
+    if(!this.emailValid(email)) error = "Email invalid";
+    if (await this.emailExists(email)) error = "Email already exists";
+    if (!this.isStrongPassword(password)) error = "Password is not strong enough";
 
-    if (!this.isStrongPassword(password)) {
+    if(error) {
       return {
-        status: 403,
+        status: 400,
         data: {
-          error: "Password is not strong enough",
+          error,
         },
       };
     }
@@ -186,6 +176,16 @@ export default class UsersService {
 
     // If all checks pass, the password is considered strong
     return true;
+  }
+
+  public usernameValid(username: string) {
+    const usernameRegex = /^[a-zA-Z0-9_]{1,30}$/;
+    return usernameRegex.test(username);
+  }
+
+  public emailValid(email: string) {
+    const emailRegex = /^[\w.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
   }
 
   public async updateElo(userId: number, elo: number) {

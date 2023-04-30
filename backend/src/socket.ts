@@ -57,21 +57,12 @@ function handleMessage(socket: WebSocket, data: any) {
 }
 
 const events: { [key: string]: (socket: WebSocket, data: any) => void } = {
-  PING: (socket: WebSocket, _data: any) => {
-    send(socket, { type: "PONG" });
-  },
-  START: (socket: WebSocket, data: any) => {
-    handleStart(socket, data);
-  },
-  MOVE: (socket: WebSocket, data: any) => {
-    handleMove(socket, data);
-  },
-  RESET: (socket: WebSocket, data: any) => {
-    handleReset(socket, data);
-  },
-  CHAT: (socket: WebSocket, data: any) => {
-    handleChat(socket, data);
-  },
+  PING: (socket: WebSocket, _data: any) => send(socket, { type: "PONG" }),
+  START: handleStart,
+  MOVE: handleMove,
+  RESIGN: handleResign,
+  RESET: handleReset,
+  CHAT: handleChat,
 };
 
 function send(socket: WebSocket, message: any) {
@@ -84,12 +75,12 @@ async function handleStart(socket: WebSocket, data: any) {
 
   // Game ID not found, make a new one
   if (games.get(gameId) === undefined) {
-    const newGame = await createNewGame(gameId, user, againstAI, socket);
+    const newGame: GameConnection = await createNewGame(gameId, user, againstAI, socket);
 
     // If against AI start the game
     if (againstAI) {
       games.set(gameId, {...newGame, stockfish: new Stockfish()});
-      send(socket, { type: "UPDATE", pgn: "", history: [newGame.game.fen()] });
+      send(socket, { type: "UPDATE", pgn: "", history: [newGame.game.fen()], moveHistory: [] });
       send(socket, {
         type: "START",
         opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
@@ -109,7 +100,7 @@ async function handleStart(socket: WebSocket, data: any) {
     if (currentGame.white.user.session === user) {
       games.set(gameId, {...currentGame, white: {...currentGame!.white, socket}});
       send(socket, { type: "INIT", color: "white" });
-      send(socket, { type: "UPDATE", pgn: currentGame.game.pgn(), history: currentGame.history, comment: currentGame.comment });
+      send(socket, { type: "UPDATE", pgn: currentGame.game.pgn(), history: currentGame.history, comment: currentGame.comment, moveHistory: currentGame.moveHistory });
       send(socket, {
         type: "START",
         opponent: { session: "", userId: 0, username: "AI", elo: 3500 },
@@ -154,7 +145,7 @@ async function handleStart(socket: WebSocket, data: any) {
 
   games.set(gameId, updatedGame);
   send(socket, { type: "INIT", color: currentPlayerColor });
-  send(socket, { type: "UPDATE", pgn: updatedGame!.game.pgn(), history: currentGame!.history, comment: currentGame!.comment ?? "" });
+  send(socket, { type: "UPDATE", pgn: updatedGame!.game.pgn(), history: currentGame!.history, comment: currentGame!.comment ?? "", moveHistory: currentGame!.moveHistory });
 
   // Don't force re-connecting user's back into loading screen
   if (updatedGame?.black?.user !== undefined) {
@@ -189,7 +180,8 @@ async function handleMove(socket: WebSocket, data: any) {
     gameCopy.move({ from, to, promotion: "q" });
     
     currentGame!.history.push(gameCopy.fen());
-    games.set(gameId, { ...currentGame!, game: gameCopy, history: currentGame!.history });
+    currentGame!.moveHistory.push({from, to});
+    games.set(gameId, { ...currentGame!, game: gameCopy, history: currentGame!.history, moveHistory:currentGame!.moveHistory });
 
     let comment = "";
     if (openings[gameCopy.pgn()] !== undefined) {
@@ -202,9 +194,10 @@ async function handleMove(socket: WebSocket, data: any) {
       pgn: gameCopy.pgn(),
       history: currentGame!.history,
       comment,
-      move: {from, to}
+      moveHistory: currentGame!.moveHistory,
+      inCheck: gameCopy.inCheck() ? ((currentPieceColor === "w") ? 'b' : 'w') : false
     });
-
+    console.log(clientMessage);
     // Check stockfish
     currentGame?.stockfish!.loadFen(gameCopy.fen());
     currentGame?.stockfish!.write("go depth 1");
@@ -224,11 +217,12 @@ async function handleMove(socket: WebSocket, data: any) {
       currentGame.stockfish!.bestMove = null; // MAKE SURE TO RESET THIS
 
       currentGame!.history.push(aiGameCopy.fen());
-      games.set(gameId, {...currentGame!, game: aiGameCopy, history: currentGame!.history});
+      currentGame!.moveHistory.push({from, to});
+      games.set(gameId, {...currentGame!, game: aiGameCopy, history: currentGame!.history, moveHistory: currentGame!.moveHistory});
       
       // If response is too fast it cancels animations on frontend
       setTimeout(() => {
-        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), history: currentGame!.history, comment: currentGame!.comment, move: {from, to}}));
+        currentGame!.white!.socket!.send(JSON.stringify({type: "UPDATE", pgn: aiGameCopy.pgn(), history: currentGame!.history, comment: currentGame!.comment, moveHistory: currentGame!.moveHistory}));
       }, 800);
       return;
     }
@@ -236,11 +230,18 @@ async function handleMove(socket: WebSocket, data: any) {
 
     // TODO: Split these up / make it so frontend can distinguish
     if (gameCopy.isGameOver()) {
-      if (gameCopy.isCheckmate() || gameCopy.isInsufficientMaterial() || gameCopy.isThreefoldRepetition()) {
-        handleCheckmate(gameId);
+      if (gameCopy.isCheckmate()) {
+        handleWin(gameId, socket, "CHECKMATE");
         return;
-      } else {
-        sendToGame(gameId, { type: "ERROR", error: "GAMEEVENT UNCHECKD" });
+      } else if(gameCopy.isInsufficientMaterial()) {
+        handleWin(gameId, socket, "INSUFFICIENTMATERIAL");
+        return;
+      } else if(gameCopy.isThreefoldRepetition()) {
+        handleDraw(gameId, socket, "REPETITION");
+        return;
+      } else if(gameCopy.isStalemate()) {
+        handleDraw(gameId, socket, "STALEMATE");
+        return;
       }
     }
   } catch (e: any) {
@@ -249,12 +250,48 @@ async function handleMove(socket: WebSocket, data: any) {
   }
 }
 
-async function handleCheckmate(gameId: string) {
+async function handleDraw(gameId: string, socket: WebSocket, event: string = "STALEMATE") {
   const game: GameConnection = games.get(gameId) as GameConnection;
+  const currentUser: User = userFromSocket(gameId, socket) as User;
+
+  if (game?.againstAI) {
+    send(game.white.socket, { type: "GAMEEVENT", event, eventData: { elo: currentUser.elo, result: "Draw"}});
+    return;
+  }
+
+  if(game?.gameOver === true) {
+    return;
+  }
+
+  // Handle ELO process (Todo, breakout)
+  const whiteUserId = game!.white!.user!.userId;
+  const whiteElo = game!.white!.user!.elo;
+  const blackUserId = game!.black!.user!.userId;
+  const blackElo = game!.black!.user!.elo;
+  const whiteNewElo = calculateEloRating(whiteElo, blackElo, GameResult.DRAW);
+  const blackNewElo = calculateEloRating(blackElo, whiteElo, GameResult.DRAW);
+  usersService.updateElo(whiteUserId, whiteNewElo);
+  usersService.updateElo(blackUserId, blackNewElo);
+  games.set(gameId, {...game, gameOver: true});
+
+  send(game.white.socket, { type: "GAMEEVENT", event, eventData: { elo: whiteNewElo, result: "Draw"}});
+  send(game!.black!.socket, { type: "GAMEEVENT", event, eventData: { elo: blackNewElo, result: "Draw"}});
+
+}
+
+async function handleWin(gameId: string, socket: WebSocket, event: string = "CHECKMATE") {
+  const game: GameConnection = games.get(gameId) as GameConnection;
+  const currentUser: User = userFromSocket(gameId, socket) as User;
+  const userColor = await userInGame(currentUser.session, gameId);
+  const winner = game!.game.turn() === "w" ? "black" : "white";
 
   // Don't calculate ELO change against bot
   if (game?.againstAI) {
-    send(game.white.socket, { type: "GAMEEVENT", event: "CHECKMATE" });
+    send(game.white.socket, { type: "GAMEEVENT", event, eventData: { elo: currentUser.elo, result: winner === userColor ? "Win" : "Lose"}});
+    return;
+  }
+
+  if(game?.gameOver === true) {
     return;
   }
 
@@ -264,7 +301,6 @@ async function handleCheckmate(gameId: string) {
   const blackUserId = game!.black!.user!.userId;
   const blackElo = game!.black!.user!.elo;
 
-  const winner = game!.game.turn() === "w" ? "black" : "white";
   const whiteNewElo = calculateEloRating(
     whiteElo,
     blackElo,
@@ -278,6 +314,8 @@ async function handleCheckmate(gameId: string) {
 
   usersService.updateElo(whiteUserId, whiteNewElo);
   usersService.updateElo(blackUserId, blackNewElo);
+
+  games.set(gameId, {...game, gameOver: true});
 
   send(game.white.socket, {
     type: "GAMEEVENT",
@@ -310,12 +348,18 @@ async function handleReset(socket: WebSocket, data: any) {
     return;
   }
 
-  sendToGame(gameId, {
+  const resetMessage = {
     type: "UPDATE",
     pgn: gameCopy.pgn(),
     history: currentGame!.history,
     comment: "",
-  });
+  };
+
+  if(currentGame?.againstAI) {
+    send(currentGame!.white!.socket, resetMessage);
+    return;
+  }
+  sendToGame(gameId, resetMessage);
 }
 
 async function handleChat(socket: WebSocket, data: any) {
@@ -359,6 +403,61 @@ async function handleChat(socket: WebSocket, data: any) {
   sendToGame(gameId, clientMessage);
 }
 
+async function handleResign(socket: WebSocket, data: any) {
+  const { gameId } = data;
+  const game: GameConnection = games.get(gameId) as GameConnection;
+  const currentUser: User = userFromSocket(gameId, socket) as User;
+
+  if(game.againstAI) {
+    send(socket, {
+      type: "GAMEEVENT",
+      event: "RESIGN",
+      eventData: { elo: 0, result: "Lose" }
+    });
+    return;
+  }
+
+  // Prevent boosting
+  if(game.gameOver === true) {
+    return;
+  }
+  games.set(gameId, {...game, gameOver: true});
+
+  // TODO: Clean up, this code is basically the same as checkmate
+  const winner = game.white.user.userId === currentUser.userId ? 'black' : 'white';
+
+  const whiteUserId = game!.white!.user!.userId;
+  const whiteElo = game!.white!.user!.elo;
+
+  const blackUserId = game!.black!.user!.userId;
+  const blackElo = game!.black!.user!.elo;
+  const whiteNewElo = calculateEloRating(
+    whiteElo,
+    blackElo,
+    winner === "white" ? GameResult.WIN : GameResult.LOSS
+  );
+  const blackNewElo = calculateEloRating(
+    blackElo,
+    whiteElo,
+    winner === "black" ? GameResult.WIN : GameResult.LOSS
+  );
+
+  usersService.updateElo(whiteUserId, whiteNewElo);
+  usersService.updateElo(blackUserId, blackNewElo);
+
+  send(game.white.socket, {
+    type: "GAMEEVENT",
+    event: "RESIGN",
+    eventData: { elo: 0, result: winner === "white" ? "Win" : "Lose" },
+  });
+  send(game!.black!.socket, {
+    type: "GAMEEVENT",
+    event: "RESIGN",
+    eventData: { elo: 0, result: winner === "black" ? "Win" : "Lose" },
+  });
+
+}
+
 async function createNewGame(
   gameId: string,
   user: string,
@@ -381,15 +480,16 @@ async function createNewGame(
     white: { user: userObject, socket },
     againstAI,
     chat: [],
+    gameOver: false
   }
   games.set(gameId, newGame);
   send(socket, { type: "INIT", color: "white" });
   return newGame;
 }
 
-async function userInGame(user: string, gameId: any) {
+async function userInGame(session: string, gameId: any) {
   const currentGame = games.get(gameId);
-  const currentUser = await usersService.getSession(user);
+  const currentUser = await usersService.getSession(session);
 
   if (!currentUser) return false;
   if (currentGame?.white.user.userId === currentUser.userId) return "white";

@@ -12,5 +12,6 @@ export type GameConnection = {
     againstAI?: boolean
     stockfish?: Stockfish
     chat?: ChatMessage[],
+    gameOver?: boolean
     [key: string]: any;
 }

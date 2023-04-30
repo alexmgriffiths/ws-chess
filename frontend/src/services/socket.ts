@@ -18,6 +18,7 @@ export const initGameSocket = async (
     setUser: React.Dispatch<React.SetStateAction<{}>>,
     setGameChat: React.Dispatch<React.SetStateAction<{}>>,
     setGameReady: React.Dispatch<React.SetStateAction<boolean>>,
+    setInCheck: React.Dispatch<React.SetStateAction<boolean>>,
     handleGameOver: any,
     socketConnectionCallback: any
     ) => {
@@ -46,7 +47,7 @@ export const initGameSocket = async (
             // Set last time server was ponged, later, check if server was ponged long time ago, then try to re-connect
             break;
             case "UPDATE":
-            const { pgn, history, comment, move } = data;
+            const { pgn, history, comment, moveHistory, inCheck } = data;
             const gameCopy = new Chess();
             gameCopy.loadPgn(pgn);
             if (comment && comment.length > 0) {
@@ -56,10 +57,10 @@ export const initGameSocket = async (
             setMoveFrom("");
             setGame(gameCopy);
             setGameFenHistory(history);
-            setGameMoveHistory((moveHistory) => [...moveHistory, move]);
+            setGameMoveHistory(moveHistory);
             const newGameHistoryIndex = history.length - 1;
             setGameHistoryIndex(newGameHistoryIndex);
-
+            setInCheck(inCheck);
             break;
             case "ERROR":
             const { error } = data;
@@ -84,6 +85,18 @@ export const initGameSocket = async (
             const { elo, result } = eventData;
             if(event === "CHECKMATE") {
                 handleGameOver("Checkmate", elo, result);
+                return;
+            } else if(event === "RESIGN") {
+                handleGameOver("Resignation", elo, result);
+                return;
+            } else if(event === "STALEMATE") {
+                handleGameOver("Stalemate", elo, result);
+                return;
+            } else if(event === "INSUFFICIENTMATERIAL") {
+                handleGameOver("Insufficient Material", elo, result);
+                return;
+            } else if(event === "REPETITION") {
+                handleGameOver("Repetition")
                 return;
             }
     
