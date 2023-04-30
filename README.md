@@ -130,7 +130,7 @@ Database setup is simple, just download and install MySQL server on your server 
 * ☑️ ~~Repetition handling~~
 * ☑️ ~~Stalemate handling~~
 * ☑️ ~~Insufficient material handling~~
-* ☑️ ~~Threefold-reptition handling~~
+* ☑️ ~~Threefold-repetition handling~~
 * ⬜️ Fix game over score animation
 * ⬜️ Login / Register page styling
 * ⬜️ Piece promotion select
