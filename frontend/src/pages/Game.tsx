@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Chess, PieceSymbol } from "chess.js";
+import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Piece, Square } from "react-chessboard/dist/chessboard/types";
 import { GamePlayer, GameChat, GameHistoryNavigator, GameHistory, GameOverModal } from "../components/Game";
