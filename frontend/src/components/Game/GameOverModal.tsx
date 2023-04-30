@@ -104,6 +104,7 @@ export const GameOverModal = ({ isOpen, onClose, type="Draw", endType="Stalemate
     if(isOpen) {
       runAnimation();
     }
+  // eslint-disable-next-line
   }, [isOpen]);
 
   const runAnimation = () => {
