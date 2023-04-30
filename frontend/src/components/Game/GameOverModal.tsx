@@ -102,30 +102,26 @@ export const GameOverModal = ({ isOpen, onClose, type="Draw", endType="Stalemate
   const [displayedScore, setDisplayedScore] = useState(elo);
   useEffect(() => {
     if(isOpen) {
-        if(newElo < elo) {
-          if (displayedScore > elo) {
-            const timeout = setTimeout(() => {
-                setDisplayedScore((prevScore: any) => prevScore - 1);
-            }, 80);
-        
-            return () => {
-                clearTimeout(timeout);
-            };
-          }
-        } else if (newElo > elo) {
-          if (displayedScore < elo) {
-            const timeout = setTimeout(() => {
-                setDisplayedScore((prevScore: any) => prevScore + 1);
-            }, 80);
-        
-            return () => {
-                clearTimeout(timeout);
-            };
-          }
-        }
+      runAnimation();
     }
-  }, [isOpen, displayedScore, elo, newElo]);
+  // eslint-disable-next-line
+  }, [isOpen]);
 
+  const runAnimation = () => {
+    setTimeout(() => {
+      setDisplayedScore((previousScore: any) => {
+        if (previousScore - 1 > newElo) {
+          runAnimation(); // Call runAnimation recursively
+          return previousScore - 1;
+        } else if (previousScore + 1 < newElo) {
+          runAnimation(); // Call runAnimation recursively
+          return previousScore + 1;
+        } else {
+          return newElo;
+        }
+      });
+    }, 80);
+  };
 
   if(type === "Lose") {
     ModalHeaderContainer = styled.div`

@@ -448,12 +448,12 @@ async function handleResign(socket: WebSocket, data: any) {
   send(game.white.socket, {
     type: "GAMEEVENT",
     event: "RESIGN",
-    eventData: { elo: 0, result: winner === "white" ? "Win" : "Lose" },
+    eventData: { elo: whiteNewElo, result: winner === "white" ? "Win" : "Lose" },
   });
   send(game!.black!.socket, {
     type: "GAMEEVENT",
     event: "RESIGN",
-    eventData: { elo: 0, result: winner === "black" ? "Win" : "Lose" },
+    eventData: { elo: blackNewElo, result: winner === "black" ? "Win" : "Lose" },
   });
 
 }
