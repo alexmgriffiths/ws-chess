@@ -15,7 +15,7 @@ export function calculateEloRating(playerRating: number, opponentRating: number,
 
   const ratingChange = K_FACTOR * (actualScore - expectedScore);
 
-  return playerRating + ratingChange;
+  return Math.round(playerRating + ratingChange);
 }
 
 function getKFactor(playerRating: number, opponentRating: number) {
@@ -33,4 +33,4 @@ function getKFactor(playerRating: number, opponentRating: number) {
     const kFactor = MIN_K_FACTOR + ((MAX_K_FACTOR - MIN_K_FACTOR) * (cappedRatingDifference / RATING_DIFFERENCE_THRESHOLD));
   
     return kFactor;
-  }
+}
